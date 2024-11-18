@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=autossh
-PKG_VERSION:=1.4f
-PKG_RELEASE:=1
+PKG_VERSION:=1.4g
+PKG_RELEASE:=5
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tgz
-PKG_SOURCE_URL:=http://www.harding.motd.ca/autossh/
-PKG_HASH:=0172e5e1bea40c642e0ef025334be3aadd4ff3b4d62c0b177ed88a8384e2f8f2
+PKG_SOURCE_URL:=https://www.harding.motd.ca/autossh/
+PKG_HASH:=5fc3cee3361ca1615af862364c480593171d0c54ec156de79fc421e31ae21277
 PKG_LICENSE:=0BSD
 
 include $(INCLUDE_DIR)/package.mk
@@ -22,17 +22,13 @@ define Package/autossh
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Autossh client
-  URL:=http://www.harding.motd.ca/autossh/
+  URL:=https://www.harding.motd.ca/autossh/
   MAINTAINER:=Christian Beier <cb@shoutrlabs.com>
   SUBMENU:=SSH
 endef
 
-define Build/Compile
-	$(call Build/Compile/Default, -f Makefile \
-		CFLAGS="$(TARGET_CFLAGS) -Wall -D\"SSH_PATH=\\\"\$$$$(SSH)\\\"\" -D\"VER=\\\"\$$$$(VER)\\\"\"" \
-		all \
-	)
-endef
+CONFIGURE_VARS += \
+	ac_cv_path_ssh=/usr/bin/ssh
 
 define Package/autossh/install
 	$(INSTALL_DIR) $(1)/usr/sbin

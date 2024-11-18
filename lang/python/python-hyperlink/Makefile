@@ -8,61 +8,42 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-hyperlink
-PKG_VERSION:=17.3.1
+PKG_VERSION:=21.0.0
 PKG_RELEASE:=1
 
-PKG_SOURCE:=hyperlink-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://files.pythonhosted.org/packages/source/h/hyperlink
-PKG_HASH:=bc4ffdbde9bdad204d507bd8f554f16bba82dd356f6130cb16f41422909c33bc
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-hyperlink-$(PKG_VERSION)
+PYPI_NAME:=hyperlink
+PKG_HASH:=427af957daa58bc909471c6c40f74c5450fa123dd093fc53efd2e91d2705a56b
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Jeffery To <jeffery.to@gmail.com>
 
+include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
-include ../python-package.mk
 include ../python3-package.mk
 
-PKG_UNPACK:=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
-
-define Package/python-hyperlink/Default
+define Package/python3-hyperlink
   SECTION:=lang
   CATEGORY:=Languages
   SUBMENU:=Python
+  TITLE:=Pure-Python immutable URLs
   URL:=https://github.com/python-hyper/hyperlink
+  DEPENDS:= \
+      +python3-light \
+      +python3-codecs \
+      +python3-idna
 endef
 
-define Package/python-hyperlink
-$(call Package/python-hyperlink/Default)
-  TITLE:=Pure-Python immutable URLs
-  DEPENDS:=+PACKAGE_python-hyperlink:python-light
-  VARIANT:=python
-endef
-
-define Package/python3-hyperlink
-$(call Package/python-hyperlink/Default)
-  TITLE:=Pure-Python immutable URLs
-  DEPENDS:=+PACKAGE_python3-hyperlink:python3-light
-  VARIANT:=python3
-endef
-
-define Package/python-hyperlink/description
+define Package/python3-hyperlink/description
 Hyperlink provides a pure-Python implementation of immutable URLs. Based
 on RFC 3986 and 3987, the Hyperlink URL makes working with both URIs and
 IRIs easy.
 endef
 
-define Package/python3-hyperlink/description
-$(call Package/python-hyperlink/description)
-.
-(Variant for Python3)
+define Py3Package/python3-hyperlink/filespec
++|$(PYTHON3_PKG_DIR)
+-|$(PYTHON3_PKG_DIR)/hyperlink/hypothesis.py
 endef
-
-$(eval $(call PyPackage,python-hyperlink))
-$(eval $(call BuildPackage,python-hyperlink))
-$(eval $(call BuildPackage,python-hyperlink-src))
 
 $(eval $(call Py3Package,python3-hyperlink))
 $(eval $(call BuildPackage,python3-hyperlink))

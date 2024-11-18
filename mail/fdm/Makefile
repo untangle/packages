@@ -8,14 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fdm
-PKG_VERSION:=1.9
-PKG_RELEASE:=3
+PKG_VERSION:=2.2
+PKG_RELEASE:=1
+
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://github.com/nicm/fdm/releases/download/$(PKG_VERSION)
+PKG_HASH:=53aad117829834e21c1b9bf20496a1aa1c0e0fb98fe7735e1e73314266fb6c16
+
+PKG_MAINTAINER:=Dmitry V. Zimin <pfzim@mail.ru>
 PKG_LICENSE:=BSD-2-Clause
 
-PKG_SOURCE:=$(PKG_VERSION).zip
-PKG_SOURCE_URL:=https://github.com/nicm/fdm/archive
-PKG_HASH:=ee08f9133657c8c959b738079c2e4f556cf5cca2daa8343feaf4f07698ad6086
-
+PKG_FIXUP:=autoreconf
+PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -24,10 +28,9 @@ define Package/fdm
   SECTION:=mail
   CATEGORY:=Mail
   TITLE:=fetch mail and deliver
-  URL:=http://fdm.sourceforge.net/
-  MAINTAINER:=Dmitry V. Zimin <pfzim@mail.ru>
+  URL:=https://github.com/nicm/fdm
   MENU:=1
-  DEPENDS:=+tdb +zlib +libopenssl +FDM_WITH_PCRE:libpcre
+  DEPENDS:=+tdb +zlib +libopenssl +FDM_WITH_PCRE:libpcre2
   USERID:=_fdm=99:_fdm=99
 endef
 
@@ -39,23 +42,8 @@ define Package/fdm/description
 endef
 
 ifdef CONFIG_FDM_WITH_PCRE
-	EXTRA_CFLAGS := -DPCRE
-	EXTRA_LDFLAGS += -lpcre
+	CONFIGURE_ARGS += --enable-pcre2
 endif
-
-MAKE_FLAGS += \
-	PREFIX="/usr" \
-	$(if $(CONFIG_FDM_WITH_PCRE),PCRE=1)
-
-define Build/Prepare
-	$(call Build/Prepare/Default)
-	$(CP) ./src/compat/* $(PKG_BUILD_DIR)/
-endef
-
-define Build/Configure
-	( cd $(PKG_BUILD_DIR); ./autogen.sh )
-	$(call Build/Configure/Default)
-endef
 
 define Package/fdm/config
 	source "$(SOURCE)/Config.in"

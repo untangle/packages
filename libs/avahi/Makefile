@@ -8,28 +8,22 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=avahi
-PKG_VERSION:=0.7
-PKG_RELEASE:=2
+PKG_VERSION:=0.8
+PKG_RELEASE:=9
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/lathiat/avahi/releases/download/v$(PKG_VERSION) \
 		https://avahi.org/download
-PKG_HASH:=57a99b5dfe7fdae794e3d1ee7a62973a368e91e414bd0dfa5d84434de5b14804
-PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
+PKG_HASH:=060309d7a333d38d951bc27598c677af1796934dbd98e1024e7ad8de798fedda
 
-PKG_BUILD_DEPENDS:=intltool/host
+PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
+PKG_LICENSE:=LGPL-2.1-or-later
+PKG_LICENSE_FILES:=LICENSE
+PKG_CPE_ID:=cpe:/a:avahi:avahi
 
 PKG_FIXUP:=autoreconf
-PKG_REMOVE_FILES:=autogen.sh
-
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
-
-ifeq ($(BUILD_VARIANT),dbus)
-PKG_BUILD_DIR=$(BUILD_DIR)/$(PKG_NAME)/dbus/$(PKG_NAME)-$(PKG_VERSION)
-else
-PKG_BUILD_DIR=$(BUILD_DIR)/$(PKG_NAME)/nodbus/$(PKG_NAME)-$(PKG_VERSION)
-endif
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -223,23 +217,6 @@ $(call Package/avahi/Default/description)
  For more information please see the avahi documentation.
 endef
 
-define Package/libavahi-compat-libdnssd
-  $(call Package/avahi/Default)
-  SECTION:=libs
-  CATEGORY:=Libraries
-  VARIANT:=dbus
-  DEPENDS:=+libavahi-client
-  TITLE+= (libdnssd)
-endef
-
-define Package/libavahi-compat-libdnssd/description
-$(call Package/avahi/Default/description)
- .
- This packages adds the libavahi-compat-libdnssd library.
- It also automatically adds the required libavahi-client package.
- For more information please see the avahi documentation.
-endef
-
 define Package/avahi-utils
   $(call Package/avahi/Default)
   SUBMENU:=IP Addresses and Names
@@ -259,23 +236,22 @@ endef
 
 TARGET_CFLAGS += $(FPIC) -DGETTEXT_PACKAGE
 
-CONFIGURE_ARGS+= \
+CONFIGURE_ARGS += \
 	--enable-shared \
 	--enable-static \
 	--disable-glib \
 	--disable-gobject \
+	--disable-introspection \
 	--disable-qt3 \
 	--disable-qt4 \
+	--disable-qt5 \
 	--disable-gtk \
 	--disable-gtk3 \
-	--with-xml=expat \
 	--disable-dbm \
 	--enable-gdbm \
 	--enable-libdaemon \
-	$(and $(CONFIG_PACKAGE_libavahi-compat-libdnssd),ifeq ($(BUILD_VARIANT),dbus),\
-		--enable-compat-libdns_sd) \
+	--disable-libevent \
 	--disable-python \
-	--disable-pygtk \
 	--disable-python-dbus \
 	--disable-mono \
 	--disable-monodoc \
@@ -289,17 +265,16 @@ CONFIGURE_ARGS+= \
 	--disable-doxygen-html \
 	--disable-doxygen-ps \
 	--disable-doxygen-pdf \
+	--disable-manpages \
 	--disable-xmltoman \
+	--disable-tests \
+	--with-xml=expat \
 	--with-distro=none \
 	--with-avahi-user=nobody \
 	--with-avahi-group=nogroup \
+	--with-avahi-priv-access-group=nogroup \
 	--with-autoipd-user=nobody \
 	--with-autoipd-group=nogroup
-
-ifneq ($(CONFIG_SSP_SUPPORT),y)
-CONFIGURE_ARGS+= \
-	--disable-stack-protector
-endif
 
 ifeq ($(BUILD_VARIANT),dbus)
 CONFIGURE_ARGS += \
@@ -311,20 +286,15 @@ endif
 
 CONFIGURE_VARS+= \
 	CFLAGS="$$$$CFLAGS -DNDEBUG -DDISABLE_SYSTEMD" \
-	ac_cv_header_sys_capability_h=no \
+	ac_cv_header_sys_capability_h=no
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libavahi-* $(1)/usr/lib/
-ifneq ($(CONFIG_PACKAGE_libavahi-compat-libdnssd),)
-ifeq ($(BUILD_VARIANT),dbus)
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libdns_sd* $(1)/usr/lib/
-endif
-endif
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/* $(1)/usr/lib/pkgconfig/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/* $(1)/usr/lib/pkgconfig/
 endef
 
 define Package/libavahi/install
@@ -343,11 +313,6 @@ Package/libavahi-nodbus-support/install=$(Package/libavahi/install)
 define Package/libavahi-client/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libavahi-client.so.* $(1)/usr/lib/
-endef
-
-define Package/libavahi-compat-libdnssd/install
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libdns_sd.so.* $(1)/usr/lib/
 endef
 
 define Package/avahi-utils/install
@@ -397,7 +362,6 @@ define Package/avahi-dnsconfd/install
 endef
 
 $(eval $(call BuildPackage,libavahi-client))
-$(eval $(call BuildPackage,libavahi-compat-libdnssd))
 $(eval $(call BuildPackage,avahi-utils))
 $(eval $(call BuildPackage,libavahi-dbus-support))
 $(eval $(call BuildPackage,libavahi-nodbus-support))

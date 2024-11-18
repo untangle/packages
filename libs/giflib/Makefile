@@ -8,29 +8,29 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=giflib
-PKG_VERSION:=5.1.4
+PKG_VERSION:=5.2.2
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/giflib
-PKG_HASH:=df27ec3ff24671f80b29e6ab1c4971059c14ac3db95406884fc26574631ba8d5
+PKG_HASH:=be7ffbd057cadebe2aa144542fd90c6838c6a083b5e8a9048b8ee3b66b29d5fb
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
-
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:giflib_project:giflib
 
-PKG_FIXUP:=autoreconf
-PKG_REMOVE_FILES:=autogen.sh aclocal.m4
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+PKG_BUILD_FLAGS:=gc-sections
 
-include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
 define Package/giflib
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=GIF libraries
-  URL:=http://sourceforge.net/projects/giflib
+  URL:=https://sourceforge.net/projects/giflib
 endef
 
 define Package/giflib/description
@@ -39,24 +39,47 @@ define Package/giflib/description
   the LZW compression algorithm was patented.
 endef
 
-TARGET_CFLAGS += $(FPIC)
+define Package/giflib-utils
+  SECTION:=utils
+  CATEGORY:=Utilities
+  TITLE:=GIF utilities
+  URL:=https://sourceforge.net/projects/giflib
+endef
 
-define Build/Compile
-	$(MAKE) -C $(PKG_BUILD_DIR)
+define Package/giflib-utils/description
+  These are the utilities that come with giflib.
+endef
+
+TARGET_CFLAGS += $(FPIC)
+TARGET_LDFLAGS += -Wl,--as-needed
+
+MAKE_FLAGS += \
+	CFLAGS="$(TARGET_CFLAGS)" \
+	LDFLAGS="$(TARGET_LDFLAGS)" \
+	PREFIX=$(CONFIGURE_PREFIX)
+
+## Avoid 'convert' invocation during the build
+define Build/Prepare
+	$(call Build/Prepare/Default)
+	touch $(PKG_BUILD_DIR)/doc/giflib-logo.gif
 endef
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/{lib,include}
-	$(CP) $(PKG_BUILD_DIR)/lib/.libs/lib*so* $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/lib/.libs/libgif.a $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/lib/libgif.la $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/lib/*.h $(1)/usr/include/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libgif.so* $(1)/usr/lib
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/libgif.a $(1)/usr/lib
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/include/*.h $(1)/usr/include
 endef
 
 define Package/giflib/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/lib/.libs/lib*so* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libgif.so* $(1)/usr/lib
 endef
 
-$(eval $(call HostBuild))
+define Package/giflib-utils/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin
+endef
+
 $(eval $(call BuildPackage,giflib))
+$(eval $(call BuildPackage,giflib-utils))

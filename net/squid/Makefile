@@ -8,20 +8,21 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=squid
-PKG_VERSION:=4.0.24
+PKG_VERSION:=6.11
 PKG_RELEASE:=1
 
-PKG_LICENSE:=GPL-2.0
-PKG_MAINTAINER:=Marko Ratkaj <marko.ratkaj@sartura.hr>
-
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=http://www3.us.squid-cache.org/Versions/v4/ \
-	http://www2.pl.squid-cache.org/Versions/v4/ \
-	http://www.squid-cache.org/Versions/v4/
-PKG_HASH:=091da0d763307dcc0f5c784ab07ea0c5a093f6dfac60f17ff26e2a6d50f76a07
+PKG_SOURCE_URL:=http://www2.pl.squid-cache.org/Versions/v6/ \
+	http://www.squid-cache.org/Versions/v6/
+PKG_HASH:=b6e60c08429314287925331b3da6c03b7d3c35b7e03319f78edb8bad6fc68899
 
-PKG_BUILD_PARALLEL:=1
+PKG_MAINTAINER:=Marko Ratkaj <markoratkaj@gmail.com>
+PKG_LICENSE:=GPL-2.0-or-later
+PKG_CPE_ID:=cpe:/a:squid-cache:squid
+
+PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -29,14 +30,14 @@ define Package/squid/Default
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=Web Servers/Proxies
-  URL:=http://www.squid-cache.org/
+  URL:=https://www.squid-cache.org/
 endef
 
 define Package/squid
   $(call Package/squid/Default)
   MENU:=1
   DEPENDS:=+libpthread +librt +libltdl +libstdcpp +libatomic +USE_GLIBC:libbsd
-  DEPENDS+= +SQUID_use-gnutls:libgnutls +!SQUID_use-gnutls:libopenssl
+  DEPENDS+= +SQUID_use-gnutls:libgnutls +SQUID_use-openssl:libopenssl
   DEPENDS+= +SQUID_with-libcap:libcap
   DEPENDS+= +SQUID_with-nettle:libnettle
   DEPENDS+= +SQUID_with-expat:libexpat
@@ -56,7 +57,8 @@ define Package/squid/config
 endef
 
 define Package/squid/conffiles
-  /etc/squid/squid.conf
+/etc/config/squid
+/etc/squid/squid.conf
 endef
 
 define Package/squid-mod-cachemgr
@@ -66,37 +68,30 @@ define Package/squid-mod-cachemgr
 endef
 
 CONFIGURE_ARGS += \
-	--config-cache \
+	BUILDCXX=$(HOSTCXX_NOCACHE) \
+	BUILDCXXFLAGS="$(HOST_CXXFLAGS) $(HOST_CPPFLAGS) -std=c++17" \
 	--datadir=/usr/share/squid \
 	--libexecdir=/usr/lib/squid \
 	--sysconfdir=/etc/squid \
-	--enable-shared \
 	--disable-static \
 	--enable-delay-pools \
-	--enable-kill-parent-hack \
-	--enable-ssl \
 	--enable-cache-digests \
 	--enable-linux-netfilter \
 	--disable-unlinkd \
 	--enable-x-accelerator-vary \
-	--disable-translation \
 	--disable-auto-locale \
-	--with-dl \
-	--with-pthreads \
 	--enable-epoll \
-	--with-maxfd=2048 \
-	--disable-ecap \
+	--with-filedescriptors=2048 \
 	--disable-external-acl-helpers \
 	--disable-arch-native \
-	--with-krb5-config=no \
 	--without-mit-krb5 \
+	--without-heimdal-krb5 \
 	--without-netfilter-conntrack \
 	--disable-ident-lookups \
 	$(if $(CONFIG_SQUID_auth-basic),--enable,--disable)-auth-basic \
 	$(if $(CONFIG_SQUID_auth-digest),--enable,--disable)-auth-digest \
 	$(if $(CONFIG_SQUID_auth-ntlm),--enable,--disable)-auth-ntlm \
 	$(if $(CONFIG_SQUID_auth-negotiate),--enable,--disable)-auth-negotiate \
-	$(if $(CONFIG_SQUID_enable-ipv6),--enable,--disable)-dlmalloc \
 	$(if $(CONFIG_SQUID_enable-ipv6),--enable,--disable)-ipv6 \
 	$(if $(CONFIG_SQUID_enable-ssl-crtd),--enable-ssl-crtd) \
 	$(if $(CONFIG_SQUID_use-gnutls),--with,--without)-gnutls \
@@ -105,21 +100,17 @@ CONFIGURE_ARGS += \
 	$(if $(CONFIG_SQUID_enable-icmp),--enable,--disable)-icmp \
 	$(if $(CONFIG_SQUID_enable-icap-client),--enable,--disable)-icap-client \
 	$(if $(CONFIG_SQUID_enable-snmp),--enable,--disable)-snmp \
-	$(if $(CONFIG_SQUID_with-libcap),--with,--without)-libcap \
+	$(if $(CONFIG_SQUID_with-libcap),--with,--without)-cap \
 	$(if $(CONFIG_SQUID_with-nettle),--with,--without)-nettle \
 	$(if $(CONFIG_SQUID_with-expat),--with,--without)-expat \
-	$(if $(CONFIG_SQUID_with-libxml2),--with,--without)-libxml2
+	$(if $(CONFIG_SQUID_with-libxml2),--with,--without)-xml2
 
 CONFIGURE_VARS += \
 	ac_cv_header_linux_netfilter_ipv4_h=yes \
 	ac_cv_epoll_works=yes
 
-define Build/Compile
-	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/lib all
-	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) \
-		DESTDIR="$(PKG_INSTALL_DIR)" \
-		install
-endef
+TARGET_CFLAGS += -Wno-error
+TARGET_LDFLAGS += -latomic
 
 define Package/squid/install
 	$(INSTALL_DIR) $(1)/usr/sbin

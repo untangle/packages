@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libowfat
-PKG_VERSION:=0.31
+PKG_VERSION:=0.33
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=http://www.fefe.de/libowfat
-PKG_HASH:=d1e4ac1cfccbb7dc51d77d96398e6302d229ba7538158826c84cb4254c7e8a12
+PKG_SOURCE_URL:=https://www.fefe.de/libowfat
+PKG_HASH:=311ec8b3f4b72bb442e323fb013a98f956fa745547f2bc9456287b20d027cd7d
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING
@@ -27,7 +27,8 @@ define Package/libowfat
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=reimplemented libdjb under GPL
-  URL:=http://www.fefe.de/libowfat/
+  URL:=https://www.fefe.de/libowfat/
+  BUILDONLY:=1
 endef
 
 define Build/Configure
@@ -35,7 +36,10 @@ endef
 
 TARGET_CFLAGS += $(FPIC)
 LOWFAT_MAKEOPTS = $(TARGET_CONFIGURE_OPTS) \
+	AR="ar" \
 	CFLAGS="$(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -I$(STAGING_DIR)/usr/include" \
+	CCC="$(TARGET_CC)" \
+	CROSS="$(TARGET_CROSS)" \
 	DEBUG="$(DEBUG)" \
 	VERSION="$(PKG_VERSION)" \
 	OS="Linux"
@@ -46,16 +50,12 @@ LOWFAT_HOST_MAKEOPTS = $(HOST_CONFIGURE_OPTS) \
 	VERSION="$(PKG_VERSION)" \
 	OS="Linux"
 
-# work around a nasty gcc bug
-ifneq ($(CONFIG_GCC_VERSION_4_2_4),)
-  LOWFAT_MAKEOPTS += WOPTS=""
-endif
-
 define Build/Compile
 	$(MAKE) -C $(PKG_BUILD_DIR) $(LOWFAT_MAKEOPTS)
 endef
 
 define Host/Compile
+	$(LN) . $(HOST_BUILD_DIR)/libowfat
 	$(MAKE) -C $(HOST_BUILD_DIR) $(LOWFAT_HOST_MAKEOPTS) ent
 endef
 

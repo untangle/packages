@@ -8,15 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fio
-PKG_VERSION:=3.6
+PKG_VERSION:=3.37
 PKG_RELEASE:=1
-PKG_MAINTAINER:=Dragan Stancevic <ds@codeminutia.com>
-PKG_LICENSE:=GPL-2.0+
+
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
+PKG_SOURCE_URL:=http://brick.kernel.dk/snaps
+PKG_HASH:=88f0fd6549ca07f7387e784a91706ab11e36d5c12ec26540f1b2d33c6f2d8327
+
+PKG_MAINTAINER:=
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 
-PKG_SOURCE_URL:=http://brick.kernel.dk/snaps
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_HASH:=026a2cbb4a1bc9810f13f23d07eb146dbd4325bb467221dc49b88915ee8a52b4
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -37,22 +41,28 @@ define Package/fio/description
 endef
 
 TARGET_CFLAGS := $(filter-out -O%,$(TARGET_CFLAGS))
+TARGET_LDFLAGS += -Wl,--gc-sections
 
 CONFIGURE_ARGS = \
 	--disable-numa \
 	--disable-rdma \
 	--disable-rados \
+	--disable-http \
 	--disable-rbd \
 	--disable-gfapi \
 	--disable-lex \
 	--disable-pmem \
 	--disable-native \
+	--disable-shm \
+	--disable-optimizations \
+	--disable-tcmalloc \
 	--cc="$(TARGET_CC)" \
-	--extra-cflags="$(TARGET_CFLAGS)"
+	--extra-cflags="$(TARGET_CFLAGS)" \
+	--prefix="$(CONFIGURE_PREFIX)"
 
 define Package/fio/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/fio $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/fio $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,fio))

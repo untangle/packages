@@ -8,10 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cgi-io
-PKG_RELEASE:=5
+PKG_RELEASE:=21
 
-PKG_LICENSE:=GPL-2.0+
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL=$(PROJECT_GIT)/project/cgi-io.git
+PKG_SOURCE_DATE:=2022-08-10
+PKG_SOURCE_VERSION:=901b0f0463c9d16a8cf5b9ed37118d8484bc9176
+PKG_MIRROR_HASH:=efe35ddd4b46cab5d3007a14ea387e33d7947b64bb524874a512b969cf59ddfc
+CMAKE_INSTALL:=1
 
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_MAINTAINER:=John Crispin <blogic@openwrt.org>
 
 include $(INCLUDE_DIR)/package.mk
@@ -29,16 +35,13 @@ define Package/cgi-io/description
   This package contains an cgi utility that is useful for up/downloading files
 endef
 
-define Build/Prepare
-	mkdir -p $(PKG_BUILD_DIR)
-	$(CP) ./src/* $(PKG_BUILD_DIR)/
-endef
-
 define Package/cgi-io/install
 	$(INSTALL_DIR) $(1)/usr/libexec $(1)/www/cgi-bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/cgi-io $(1)/usr/libexec
-	$(LN) ../../usr/libexec/cgi-io $(1)/www/cgi-bin/cgi-upload 
-	$(LN) ../../usr/libexec/cgi-io $(1)/www/cgi-bin/cgi-download 
+	$(LN) ../../usr/libexec/cgi-io $(1)/www/cgi-bin/cgi-upload
+	$(LN) ../../usr/libexec/cgi-io $(1)/www/cgi-bin/cgi-download
+	$(LN) ../../usr/libexec/cgi-io $(1)/www/cgi-bin/cgi-backup
+	$(LN) ../../usr/libexec/cgi-io $(1)/www/cgi-bin/cgi-exec
 endef
 
 $(eval $(call BuildPackage,cgi-io))

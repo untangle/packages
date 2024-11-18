@@ -34,9 +34,9 @@ The button "Determine Modules Automatically" tries to make a best guess determin
 When un-/loading the modules, there is a certain number of retries (`module_load`) performed.
 
 The option "Force disabling wifi even if stations associated" does what it says - when activated it simply shuts down WiFi.
-When unchecked, its checked every `recheck_interval` minutes if there are still stations associated. Once the stations disconnect, WiFi is disabled.
+When unchecked, its checked every `recheck_interval` minutes if there are still stations associated. Once the stations disconnect, WiFi is disabled. To ignore associated stations add their MAC to `ignore_stations`.
 
-Please note, that the parameters `module_load` and `recheck_interval` are only accessible through uci.
+Please note, that the parameters `module_load`, `recheck_interval` and `ignore_stations` are only accessible through uci.
 
 ## UCI Configuration `wifi_schedule`
 UCI configuration file: `/etc/config/wifi_schedule`:
@@ -47,6 +47,7 @@ config global
         option enabled '0'
         option recheck_interval '10'
         option modules_retries '10'
+#       option ignore_stations 'AA:AA:AA:AA:AA:AA BB:BB:BB:BB:BB:BB'
 
 config entry 'Businesshours'
         option enabled '0'
@@ -73,10 +74,11 @@ Then call the script as follows in order to get the necessary cron jobs created:
 All commands:
  
 ```
-wifi_schedule.sh cron|start|stop|forcestop|recheck|getmodules|savemodules|help
+wifi_schedule.sh cron|start|startup|stop|forcestop|recheck|getmodules|savemodules|help
 
     cron: Create cronjob entries.
     start: Start wifi.
+    startup: Checks current timewindow and enables/disables WIFI accordingly.
     stop: Stop wifi gracefully, i.e. check if there are stations associated and if so keep retrying.
     forcestop: Stop wifi immediately.
     recheck: Recheck if wifi can be disabled now.
@@ -84,3 +86,6 @@ wifi_schedule.sh cron|start|stop|forcestop|recheck|getmodules|savemodules|help
     savemodules: Saves a list of automatic determined modules to UCI
     help: This description.
 ```
+
+## Startup Script: `/etc/init.d/wifi_schedule`
+Makes sure time window is checked and WIFI is enabled or disabled accordingly when powering on the router.

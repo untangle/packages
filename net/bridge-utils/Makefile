@@ -9,19 +9,21 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=bridge-utils
-PKG_VERSION:=1.5
-PKG_RELEASE:=5
+PKG_VERSION:=1.7.1
+PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://git.kernel.org/pub/scm/linux/kernel/git/shemminger/bridge-utils.git
-PKG_SOURCE_VERSION:=v${PKG_VERSION}
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_MIRROR_HASH:=ce568c41f60987ed972c53fb8dab92bf45052849c4992e8ae931c1eb505630b7
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=@KERNEL/linux/utils/net/bridge-utils
+PKG_HASH:=a61d8be4f1a1405c60c8ef38d544f0c18c05b33b9b07e5b4b31033536165e60e
 
-PKG_LICENSE:=GPL-2.0+
+PKG_MAINTAINER:=Nikolay Martynov <mar.kolya@gmail.com>
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:kernel:bridge-utils
+
 PKG_FIXUP:=autoreconf
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -29,8 +31,8 @@ define Package/bridge
   SECTION:=net
   CATEGORY:=Base system
   TITLE:=Ethernet bridging configuration utility
-  URL:=http://bridge.sourceforge.net/
-  PKG_MAINTAINER:=Nikolay Martynov <mar.kolya@gmail.com>
+  URL:=http://www.linuxfromscratch.org/blfs/view/svn/basicnet/bridge-utils.html
+  ALTERNATIVES:=300:/usr/sbin/brctl:/usr/libexec/brctl-bridge-utils
 endef
 
 define Package/bridge/description
@@ -38,21 +40,12 @@ define Package/bridge/description
  form a larger network.
 endef
 
-TARGET_CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-
 CONFIGURE_ARGS += \
-	--with-linux-headers="$(LINUX_DIR)" \
+	--with-linux-headers="$(LINUX_DIR)"
 
 define Package/bridge/install
-	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/brctl/brctl $(1)/usr/sbin
-endef
-
-define Package/bridge/prerm
-#!/bin/sh
-$${IPKG_INSTROOT}/bin/busybox brctl -h 2>&1 | grep -q BusyBox && \
-ln -sf ../../bin/busybox $${IPKG_INSTROOT}/usr/sbin/brctl
-exit 0
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/brctl $(1)/usr/libexec/brctl-bridge-utils
 endef
 
 $(eval $(call BuildPackage,bridge))

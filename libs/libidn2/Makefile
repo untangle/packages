@@ -8,17 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libidn2
-PKG_VERSION:=2.0.5
+PKG_VERSION:=2.3.7
 PKG_RELEASE:=1
-PKG_MAINTAINER:=Kevin Darbyshire-Bryant <ldir@darbyshire-bryant.me.uk>
-PKG_LICENSE:=GPL-2.0-or-later LGPL-3.0-or-later
-PKG_LICENSE_FILES:=COPYING COPYINGv2 COPYING.LESSERv3
 
 PKG_SOURCE_URL:=@GNU/libidn
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_HASH:=53f69170886f1fa6fa5b332439c7a77a7d22626a82ef17e2c1224858bb4ca2b8
+PKG_HASH:=4c21a791b610b9519b9d0e12b8097bf2f359b12f8dd92647611a929e6bfd7d64
+
+PKG_MAINTAINER:=
+PKG_CPE_ID:=cpe:/a:gnu:libidn2
 
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
@@ -42,6 +43,8 @@ define Package/idn2
   SUBMENU:=IP Addresses and Names
   TITLE:=GNU IDN2 (Internationalized Domain Name) tool
   DEPENDS:=+libidn2
+  LICENSE:=GPL-2.0-or-later
+  LICENSE_FILES:=COPYINGv2
 endef
 
 define Package/idn2/description
@@ -57,6 +60,8 @@ define Package/libidn2
   DEPENDS:=+libunistring $(ICONV_DEPENDS) $(INTL_DEPENDS)
   TITLE:=International domain name library (IDNA2008, Punycode and TR46)
   URL:=https://www.gnu.org/software/libidn/#libidn2
+  LICENSE:=LGPL-3.0-or-later
+  LICENSE_FILES:=COPYING.LESSERv3
 endef
 
 define Package/libidn2/description

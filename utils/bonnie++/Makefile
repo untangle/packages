@@ -8,26 +8,26 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=bonnie++
-PKG_VERSION:=1.97
+PKG_VERSION:=2.00a
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tgz
-PKG_SOURCE_URL:=http://www.coker.com.au/bonnie++/experimental/
-PKG_HASH:=44f5a05937648a6526ba99354555d7d15f2dd392e55d3436f6746da6f6c35982
+PKG_SOURCE_URL:=https://www.coker.com.au/bonnie++
+PKG_HASH:=a8d33bbd81bc7eb559ce5bf6e584b9b53faea39ccfb4ae92e58f27257e468f0e
+
+PKG_MAINTAINER:=
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=copyright.txt
-PKG_MAINTAINER:=Florian Fainelli <florian@openwrt.org>
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION).1
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/meson.mk
 
 define Package/bonniexx
   SECTION:=utils
   CATEGORY:=Utilities
   DEPENDS:=+libstdcpp +libpthread
   TITLE:=Bonnie++ - hard drive bottleneck testing program.
-  URL:=http://www.coker.com.au/bonnie++/
+  URL:=https://www.coker.com.au/bonnie++/
 endef
 
 define Package/bonniexx/description
@@ -35,19 +35,17 @@ define Package/bonniexx/description
   tests of hard drive and file system performance.
 endef
 
-define Build/Compile
-	$(MAKE) -C $(PKG_BUILD_DIR) \
-		TARGET_CXX="$(TARGET_CXX)" \
-		TARGET_LINK="$(TARGET_CXX)" \
-		MORECFLAGS="$(TARGET_CPPFLAGS) $(TARGET_CXXFLAGS)" \
-		DESTDIR="$(PKG_INSTALL_DIR)" \
-		all
-endef
+MESON_ARGS += \
+	-Db_lto=true \
+	-Dcpp_eh=none \
+	-Dcpp_rtti=false
+
+TARGET_CXXFLAGS += -ffunction-sections -fdata-sections
 
 define Package/bonniexx/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(CP) $(PKG_BUILD_DIR)/bonnie++ $(1)/usr/bin/
-	$(CP) $(PKG_BUILD_DIR)/bon_csv2html $(1)/usr/bin/
+	$(CP) $(PKG_INSTALL_DIR)/usr/bin/bonnie++ $(1)/usr/bin/
+	$(CP) $(PKG_INSTALL_DIR)/usr/bin/bon_csv2html $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,bonniexx))

@@ -8,18 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=postfix
-PKG_RELEASE:=1
-PKG_VERSION:=3.3.1
-PKG_SOURCE_URL:= \
-	https://cdn.postfix.johnriley.me/mirrors/postfix-release/official/ \
-	ftp://ftp.porcupine.org/mirrors/postfix-release/official/
+PKG_VERSION:=3.8.2
+PKG_RELEASE:=2
 
-PKG_HASH:=54f514dae42b5275cb4bc9c69283f16c06200b71813d0bb696568c4ba7ae7e3b
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:= \
+	https://de.postfix.org/ftpmirror/official/ \
+	http://ftp.porcupine.org/mirrors/postfix-release/official/
+PKG_HASH:=6790903cdbb5e0e47196691eb9a5f2cf8050262def941e039e6d4bf4043a5e30
+
 PKG_MAINTAINER:=Denis Shulyaka <Shulyaka@gmail.com>
 PKG_LICENSE:=IPL-1.0
 PKG_LICENSE_FILES:=LICENSE
-PKG_BUILD_DEPENDS:=POSTFIX_CDB:tinycdb
+PKG_CPE_ID:=cpe:/a:postfix:postfix
+
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_POSTFIX_TLS \
 	CONFIG_POSTFIX_SASL \
@@ -27,6 +29,7 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_POSTFIX_CDB \
 	CONFIG_POSTFIX_DB \
 	CONFIG_POSTFIX_SQLITE \
+	CONFIG_POSTFIX_MYSQL \
 	CONFIG_POSTFIX_PGSQL \
 	CONFIG_POSTFIX_PCRE \
 	CONFIG_POSTFIX_EAI \
@@ -41,7 +44,8 @@ define Package/postfix
   	postfix=25:postfix=25 \
   	postdrop=26:postdrop=26
   URL:=http://www.postfix.org/
-  DEPENDS:=+POSTFIX_TLS:libopenssl +POSTFIX_SASL:libsasl2 +POSTFIX_LDAP:libopenldap +POSTFIX_DB:libdb47 +POSTFIX_SQLITE:libsqlite3 +POSTFIX_PGSQL:libpq +POSTFIX_EAI:icu +POSTFIX_PCRE:libpcre
+  DEPENDS:=+POSTFIX_CDB:tinycdb +POSTFIX_TLS:libopenssl +POSTFIX_SASL:libsasl2 +POSTFIX_LDAP:libopenldap +POSTFIX_DB:libdb47 +POSTFIX_SQLITE:libsqlite3 +POSTFIX_MYSQL:libmysqlclient +POSTFIX_PGSQL:libpq +POSTFIX_EAI:icu +POSTFIX_PCRE:libpcre2
+  MENU:=1
 endef
 
 define Package/postfix/description
@@ -49,61 +53,74 @@ define Package/postfix/description
 endef
 
 define Package/postfix/config
-	menu "Select postfix build options"
-		config POSTFIX_TLS
-			bool "TLS support"
-			default y
-			help
-			  Implements TLS support in postfix (using OpenSSL).
-		config POSTFIX_SASL
-			bool "SASL support"
-			default y
-			help
-			  Implements SASL support in postfix (using Cyrus SASL).
-		config POSTFIX_LDAP
-			bool "LDAP support"
-			default y
-			help
-			  Implements LDAP support in postfix (using OpenLDAP).
-		config POSTFIX_DB
-			bool "BerkeleyDB support"
-			default n
-			help
-			  Implements support for btree and hash files using Berkeley DB.
-		config POSTFIX_CDB
-			bool "CDB support"
-			default y
-			help
-			  Implements support for cdb files using tinycdb
-		config POSTFIX_SQLITE
-			bool "SQLITE support"
-			default y
-			help
-			  Implements support for SQLite3 DB
-		config POSTFIX_PGSQL
-			bool "PostgreSQL support"
-			default n
-			help
-			  Implement support for PostgreSQL
-		config POSTFIX_PCRE
-			bool "PCRE support"
-			default y
-			help
-			  Implement support for Perl Compatible Regular Expressions
-		config POSTFIX_EAI
-			bool "SMTPUTF8 support"
-			default n
-			help
-			  Enable Postfix support for Email Address Internationalization
-			  (EAI) as defined in RFC 6531 (SMTPUTF8 extension), RFC 6532
-			  (Internationalized email headers) and RFC 6533
-			  (Internationalized delivery status notifications).
-			  Since version 3.0, Postfix fully supports UTF-8 email
-			  addresses and UTF-8 message header values.
-	endmenu
+	config POSTFIX_TLS
+		depends on PACKAGE_postfix
+		bool "TLS support"
+		default y
+		help
+			Implements TLS support in postfix (using OpenSSL).
+	config POSTFIX_SASL
+		depends on PACKAGE_postfix
+		bool "SASL support"
+		default y
+		help
+			Implements SASL support in postfix (using Cyrus SASL).
+	config POSTFIX_LDAP
+		depends on PACKAGE_postfix
+		bool "LDAP support"
+		default y
+		help
+			Implements LDAP support in postfix (using OpenLDAP).
+	config POSTFIX_DB
+		depends on PACKAGE_postfix
+		bool "BerkeleyDB support"
+		default n
+		help
+			Implements support for btree and hash files using Berkeley DB.
+	config POSTFIX_CDB
+		depends on PACKAGE_postfix
+		bool "CDB support"
+		default y
+		help
+			Implements support for cdb files using tinycdb
+	config POSTFIX_SQLITE
+		depends on PACKAGE_postfix
+		bool "SQLITE support"
+		default y
+		help
+			Implements support for SQLite3 DB
+	config POSTFIX_MYSQL
+		depends on PACKAGE_postfix
+		bool "MYSQL support"
+		default n
+		help
+			Implements support for MySQL
+	config POSTFIX_PGSQL
+		depends on PACKAGE_postfix
+		bool "PostgreSQL support"
+		default n
+		help
+			Implement support for PostgreSQL
+	config POSTFIX_PCRE
+		depends on PACKAGE_postfix
+		bool "PCRE support"
+		default y
+		help
+			Implement support for Perl Compatible Regular Expressions
+	config POSTFIX_EAI
+		depends on PACKAGE_postfix
+		bool "SMTPUTF8 support"
+		default n
+		help
+			Enable Postfix support for Email Address Internationalization
+			(EAI) as defined in RFC 6531 (SMTPUTF8 extension), RFC 6532
+			(Internationalized email headers) and RFC 6533
+			(Internationalized delivery status notifications).
+			Since version 3.0, Postfix fully supports UTF-8 email
+			addresses and UTF-8 message header values.
 endef
 
-CCARGS=-DNO_NIS
+CCARGS=-DNO_NIS -fcommon
 AUXLIBS=-L$(STAGING_DIR)/usr/lib
 
 ifdef CONFIG_POSTFIX_TLS
@@ -144,14 +161,19 @@ ifdef CONFIG_POSTFIX_SQLITE
   AUXLIBS+=-L$(STAGING_DIR)/usr/lib -lsqlite3 -lpthread
 endif
 
+ifdef CONFIG_POSTFIX_MYSQL
+  CCARGS+=-DHAS_MYSQL -I$(STAGING_DIR)/usr/include/mysql
+  AUXLIBS+=-L$(STAGING_DIR)/usr/lib -lmysqlclient -lz -lm
+endif
+
 ifdef CONFIG_POSTFIX_PGSQL
   CCARGS+=-DHAS_PGSQL -I$(STAGING_DIR)/usr/include/
   AUXLIBS+=-L$(STAGING_DIR)/usr/lib -lpq
 endif
 
 ifdef CONFIG_POSTFIX_PCRE
-  CCARGS+=-DHAS_PCRE -I$(STAGING_DIR)/usr/include/
-  AUXLIBS+=-L$(STAGING_DIR)/usr/lib -lpcre
+  CCARGS+=-DHAS_PCRE=2 -I$(STAGING_DIR)/usr/include/
+  AUXLIBS+=-L$(STAGING_DIR)/usr/lib -lpcre2-8
 else
   CCARGS+=-DNO_PCRE
 endif
@@ -166,6 +188,7 @@ else
 endif
 
 CCARGS+=-DDEF_DB_TYPE=\"$(default_database_type)\"
+TARGET_LDFLAGS += $(if $(CONFIG_USE_GLIBC),-lresolv)
 
 # prevent postfix-install from executing postconf at build time
 # by explicitly providing the default values to postfix-install
@@ -203,7 +226,7 @@ endef
 
 define Build/Compile
 	# Currently postfix has a bug with Makefiles that CCARGS are not passed to the compiler, so we are copying them to CC as a workaround
-	cd $(PKG_BUILD_DIR); $(MAKE) $(TARGET_CONFIGURE_OPTS) CC='$(TARGET_CC) $(CCARGS)'
+	cd $(PKG_BUILD_DIR); $(MAKE) $(TARGET_CONFIGURE_OPTS) CC='$(TARGET_CC) $(CCARGS) $(TARGET_CFLAGS) $(TARGET_LDFLAGS)'
 	$(foreach p, \
 		default_database_type config_directory command_directory daemon_directory \
 		shlib_directory manpage_directory data_directory queue_directory \

@@ -8,23 +8,22 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=apinger
-PKG_VERSION:=0.6.1
-PKG_RELEASE=$(PKG_SOURCE_VERSION)
+PKG_SOURCE_DATE:=2015-04-09
+PKG_SOURCE_VERSION:=78eb328721ba1a10571c19df95acddcb5f0c17c8
+PKG_RELEASE:=8
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/Jajcus/apinger.git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=c7da72f7ec26eedd7fd8d224c0e10787b204f94e
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_HASH:=c6739bef32568877ad63dbfa8e34b617a287e225a0344d4c41ba891e1f25d487
+PKG_SOURCE_URL:=https://github.com/Jajcus/apinger
+PKG_MIRROR_HASH:=00d93d46b072cd231773a542b0e7ea6f01b2f8b73f162dec0adeb4a777d1d48c
 
 PKG_MAINTAINER:=Alex Samorukov <samm@os2.kiev.ua>
-PKG_LICENSE:= GPL-2.0
+PKG_LICENSE:=GPL-2.0-only
 
+PKG_REMOVE_FILES:=autogen.sh
 PKG_FIXUP:=autoreconf
 
-PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=0
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -33,7 +32,6 @@ define Package/apinger
   CATEGORY:=Network
   TITLE:=Tool which monitors various IP devices by simple ICMP echo requests
   URL:=https://github.com/Jajcus/apinger
-  PKG_MAINTAINER:=Alex Samorukov <samm@os2.kiev.ua>
 endef
 
 define Package/apinger/description
@@ -48,11 +46,8 @@ define Package/apinger/description
 endef
 
 define Package/apinger/conffiles
-/etc/apinger.conf
-endef
-
-define Build/Configure
-	$(call Build/Configure/Default)
+/etc/config/apinger
+/etc/apinger.user
 endef
 
 define Package/apinger/install
@@ -62,7 +57,35 @@ define Package/apinger/install
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/apinger.conf $(1)/etc/apinger.conf
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/apinger.init $(1)/etc/init.d/apinger
+	$(INSTALL_DIR) $(1)/etc/config
+	$(INSTALL_DATA) ./files/apinger.config $(1)/etc/config/apinger
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) ./files/apinger-hotplug $(1)/usr/libexec/apinger-hotplug
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/apinger
+	$(INSTALL_DATA) ./files/user.hotplug $(1)/etc/hotplug.d/apinger/01-user
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
+	$(INSTALL_DATA) ./files/iface.hotplug $(1)/etc/hotplug.d/iface/25-apinger
+	$(INSTALL_DIR) $(1)/usr/libexec/rpcd
+	$(INSTALL_BIN) ./files/apinger.rpc $(1)/usr/libexec/rpcd/apinger
+endef
+
+define Package/apinger-rrd
+  SECTION:=net
+  CATEGORY:=Network
+  DEPENDS:=+apinger +rrdtool1 +rrdcgi1
+  TITLE:=Apinger RRD Graphs
+  URL:=https://github.com/Jajcus/apinger
+endef
+
+define Package/apinger-rrd/description
+	Generate RRD Graphs from Apinger Data
+endef
+
+define Package/apinger-rrd/install
+	$(INSTALL_DIR) $(1)/usr/libexec/apinger/rpc
+	$(INSTALL_DATA) ./files/graphs.sh $(1)/usr/libexec/apinger/rpc
 endef
 
 $(eval $(call BuildPackage,apinger))
+$(eval $(call BuildPackage,apinger-rrd))
 

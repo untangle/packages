@@ -8,17 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=tcpreplay
-PKG_VERSION:=4.2.6
+PKG_VERSION:=4.5.1
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://github.com/appneta/tcpreplay/releases/download/v$(PKG_VERSION)
-PKG_HASH:=043756c532dab93e2be33a517ef46b1341f7239278a1045ae670041dd8a4531d
+PKG_HASH:=5126613f783062b43f514b05ad981376050a8fee35b03c8de4445ddeefd95049
 
 PKG_LICENSE:=GPL-3.0
 PKG_LICENSE_FILES:=docs/LICENSE
+PKG_CPE_ID:=cpe:/a:broadcom:tcpreplay
 
-PKG_FIXUP:=libtool
+PKG_FIXUP:=autoreconf
+PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -28,12 +30,12 @@ TCPREPLAY_MODULES:= \
 	tcpreplay tcpreplay-edit tcprewrite
 
 define Package/tcpreplay/default
-  SUBMENU:=tcprelay
+  SUBMENU:=Tcpreplay
   SECTION:=net
   CATEGORY:=Network
   URL:=http://tcpreplay.appneta.com/
   MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
-  DEPENDS:=+librt +libpcap
+  DEPENDS:=+librt +libpcap +libdnet +USE_MUSL:musl-fts
 endef
 
 define Package/tcpbridge
@@ -125,17 +127,21 @@ define Package/tcpreplay-all/description
   to support switches, routers, and IP Flow/NetFlow appliances. 
 endef
 
+ifneq ($(CONFIG_USE_MUSL),)
+	TARGET_LDFLAGS+= -lfts
+endif
+
 CONFIGURE_VARS += \
 	ac_cv_lib_nl_nl_cache_alloc=no \
 	ac_cv_lib_nl_genl_3_genl_connect=no \
 	ac_cv_lib_nl_3_nl_cache_alloc=no \
-	ac_cv_lib_dbus_1_dbus_malloc=no
+	ac_cv_lib_dbus_1_dbus_malloc=no \
+	ac_cv_path_pcncfg=no
 
 CONFIGURE_ARGS += \
 	--enable-force-pf \
 	--enable-dynamic-link \
-	--prefix="$(PKG_INSTALL_DIR)/usr" \
-	--exec-prefix="$(PKG_INSTALL_DIR)/usr" \
+	--with-libdnet="$(STAGING_DIR)/usr" \
 	--with-libpcap="$(STAGING_DIR)/usr"
 
 define tcpreplayTemplate

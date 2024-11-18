@@ -21,6 +21,13 @@
 #
 ##############################################################################
 
+# while useful (sh)ellcheck is pedantic and noisy
+# shellcheck disable=1091,2002,2004,2034,2039,2086,2094,2140,2154,2155
+
+UB_IPTOOLS_BLANK=
+
+##############################################################################
+
 domain_ptr_ip6() {
   # Get the nibble rounded /CIDR ...ip6.arpa.
   echo "$1" | awk -F: \
@@ -37,7 +44,7 @@ domain_ptr_ip6() {
   y = $0 ;
   ct_start = length(y) - 32 + CIDR ;
   for(i=ct_start; i>0; i--) { x = (x substr(y,i,1)) ; } ;
-  gsub(/./,"&\.",x) ;
+  gsub(/./,"&.",x) ;
   x = (x "ip6.arpa") ;
   print x }'
 }
@@ -58,7 +65,7 @@ host_ptr_ip6() {
   ct_start = length(y);
   for(i=ct_start; i>0; i--) { x = (x substr(y,i,1)) ; } ;
   sub(/[0-9]+\//,"",x) ;
-  gsub(/./,"&\.",x) ;
+  gsub(/./,"&.",x) ;
   x = (x "ip6.arpa") ;
   print x }'
 }
@@ -73,8 +80,8 @@ domain_ptr_ip4() {
   CIDR = (CIDR / 8) ;
   dtxt = $0 ;
   sub(/\/.*/,"",dtxt) ;
-  split(dtxt, dtxt, ".") ;
-  for(i=1; i<=CIDR; i++) { x = (dtxt[i] "." x) ; }
+  split(dtxt, dtxtarr, ".") ;
+  for(i=1; i<=CIDR; i++) { x = (dtxtarr[i] "." x) ; }
   x = (x "in-addr.arpa") ;
   print x }'
 }
@@ -82,7 +89,7 @@ domain_ptr_ip4() {
 ##############################################################################
 
 host_ptr_ip4() {
-  # Get omplete host ...in-addr.arpa.
+  # Get complete host ...in-addr.arpa.
   echo "$1" | awk -F. \
   '{ x = ( $4"."$3"."$2"."$1".in-addr.arpa" ) ;
   sub(/\/[0-9]+/,"",x) ;
@@ -124,6 +131,21 @@ valid_subnet4() {
 
 ##############################################################################
 
+valid_subnet_any() {
+  local subnet=$1
+  local validip4=$( valid_subnet4 $subnet )
+  local validip6=$( valid_subnet6 $subnet )
+
+
+  if [ "$validip4" = "ok" ] || [ "$validip6" = "ok" ] ; then
+    echo "ok"
+  else
+    echo "not"
+  fi
+}
+
+##############################################################################
+
 private_subnet() {
   case "$1" in
     10"."*) echo "ok" ;;
@@ -132,6 +154,17 @@ private_subnet() {
     172"."3[0-1]"."*) echo "ok" ;;
     192"."168"."*) echo "ok" ;;
     f[cd][0-9a-f][0-9a-f]":"*) echo "ok" ;;
+    *) echo "not" ;;
+  esac
+}
+
+##############################################################################
+
+local_subnet() {
+  # local subnet 2nd place is limited to one digit to improve the filter
+  case "$1" in
+    127"."[0-9]"."[0-9]*) echo "ok" ;;
+    ::1|::1@*|::1#*) echo "ok" ;;
     *) echo "not" ;;
   esac
 }
@@ -150,6 +183,28 @@ domain_ptr_any() {
     arpa=$( domain_ptr_ip4 "$subnet" )
   elif [ "$validip6" = "ok" ] ; then
     arpa=$( domain_ptr_ip6 "$subnet" )
+  fi
+
+
+  if [ -n "$arpa" ] ; then
+    echo $arpa
+  fi
+}
+
+##############################################################################
+
+host_ptr_any() {
+  local subnet=$1
+  local arpa validip4 validip6
+
+  validip4=$( valid_subnet4 $subnet )
+  validip6=$( valid_subnet6 $subnet )
+
+
+  if [ "$validip4" = "ok" ] ; then
+    arpa=$( host_ptr_ip4 "$subnet" )
+  elif [ "$validip6" = "ok" ] ; then
+    arpa=$( host_ptr_ip6 "$subnet" )
   fi
 
 

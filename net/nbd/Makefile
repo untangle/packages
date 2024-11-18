@@ -8,14 +8,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nbd
-PKG_VERSION:=3.16.2
+PKG_VERSION:=3.25
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@SF/nbd
-PKG_HASH:=422f62bdf6e6b973bd82083dc52b6577396fe00aa6607837ac464e476124155b
-PKG_LICENSE:=GPL-2.0+
+PKG_SOURCE_URL:=https://github.com/NetworkBlockDevice/nbd/releases/download/$(PKG_NAME)-$(PKG_VERSION)
+PKG_HASH:=f5c8fd0fcb57b1c926594d0e57f356432ee08678bef1d40d088f0830f0cbdd0a
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_MAINTAINER:=Marcin Jurkowski <marcin1j@gmail.com>
+PKG_CPE_ID:=cpe:/a:network_block_device_project:network_block_device
 
 PKG_INSTALL:=1
 
@@ -24,13 +25,11 @@ include $(INCLUDE_DIR)/package.mk
 # -liconv due to glib2, to be revisited later
 include $(INCLUDE_DIR)/nls.mk
 
-PKG_BUILD_DEPENDS:=glib2 gettext
-
 define Package/nbd
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Network Block Device utilities
-  URL:=http://nbd.sourceforge.net
+  URL:=https://nbd.sourceforge.io
   DEPENDS:=+kmod-nbd
 endef
 
@@ -42,7 +41,7 @@ define Package/nbd-server
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Network Block Device Server
-  URL:=http://nbd.sourceforge.net
+  URL:=https://nbd.sourceforge.io
   DEPENDS:=+glib2
 endef
 
@@ -51,10 +50,11 @@ define Package/nbd-server/description
 endef
 
 CONFIGURE_ARGS += \
-	--disable-glibtest \
-	--without-gnutls
+	--without-gnutls \
+	--without-libnl \
+	--enable-syslog
 
-TARGET_CFLAGS += --std=gnu99 -DNODAEMON
+TARGET_CFLAGS += -DNODAEMON
 
 define Package/nbd/install
 	$(INSTALL_DIR) $(1)/usr/sbin

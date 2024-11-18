@@ -7,25 +7,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rtl-sdr
-PKG_VERSION:=0.5.3-20150608-$(PKG_SOURCE_VERSION)
-PKG_RELEASE:=2
+PKG_VERSION:=2.0.1
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=git://git.osmocom.org/rtl-sdr.git
-PKG_SOURCE_VERSION:=e3c03f738f5aef4dc51e2b741fbdb542b9cc1bb1
-
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE:=$(PKG_SOURCE_SUBDIR).tar.gz
-PKG_MIRROR_HASH:=6b1a3ae95e6d9e896ec4f8dcca46b7cf5741533bb549d429ac3fd46c76e2d595
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_SOURCE_SUBDIR)
-PKG_BUILD_PARALLEL:=1
-
-CMAKE_INSTALL:=1
-
-PKG_LICENSE:=GPLv2
-PKG_LICENSE_FILES:=COPYING
+PKG_SOURCE_VERSION:=v2.0.1
+PKG_SOURCE_URL:=https://gitea.osmocom.org/sdr/rtl-sdr
+PKG_MIRROR_HASH:=731dfdf5ae70b3155b942c829467113a61590da90b643852ed82b73aae982094
 
 PKG_MAINTAINER:=Vasilis Tsiligiannis <b_tsiligiannis@silverton.gr>
+PKG_LICENSE:=GPL-2.0-or-later
+PKG_LICENSE_FILES:=COPYING
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -77,6 +69,10 @@ define Build/InstallDev
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/librtlsdr.so* $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/librtlsdr.pc $(1)/usr/lib/pkgconfig/
+endef
+
+define Package/rtl-sdr/conffiles
+/etc/config/rtl_tcp
 endef
 
 define Package/rtl-sdr/install

@@ -8,31 +8,31 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libuv
-PKG_VERSION:=1.20.3
+PKG_VERSION:=1.48.0
 PKG_RELEASE:=1
 
-PKG_LICENSE_FILES:=LICENSE
-
-PKG_MAINTAINER:=Marko Ratkaj <marko.ratkaj@sartura.hr>
-
 PKG_SOURCE:=$(PKG_NAME)-v$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://dist.libuv.org/dist/v$(PKG_VERSION)/
-PKG_HASH:=3bb7aad916c7a5fd0053dcb6adee49905360a2a160f4a59bc62dbe4370328579
-
+PKG_SOURCE_URL:=https://dist.libuv.org/dist/v$(PKG_VERSION)/
+PKG_HASH:=7f1db8ac368d89d1baf163bac1ea5fe5120697a73910c8ae6b2fffb3551d59fb
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-v$(PKG_VERSION)
-PKG_BUILD_PARALLEL:=1
 
-PKG_INSTALL:=1
-PKG_FIXUP:=autoreconf
+PKG_MAINTAINER:=Marko Ratkaj <markoratkaj@gmail.com>
+PKG_LICENSE:=MIT
+PKG_LICENSE_FILES:=LICENSE
+PKG_CPE_ID:=cpe:/a:libuv_project:libuv
+
+CMAKE_BINARY_SUBDIR:=out/cmake
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/cmake.mk
 
 define Package/libuv
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=Cross-platform asychronous I/O library
-  URL:=https://github.com/libuv/libuv
+  URL:=https://libuv.org/
   DEPENDS:=+libpthread +librt
+  ABI_VERSION:=1
 endef
 
 define Package/libuv/description
@@ -41,36 +41,19 @@ define Package/libuv/description
  pyuv, and others.
 endef
 
-define Build/Configure
-	( cd $(PKG_BUILD_DIR); ./autogen.sh )
-	$(call Build/Configure/Default)
-endef
+CMAKE_OPTIONS += -DBUILD_TESTING=OFF
 
 define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/include/
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/include/* \
-		$(1)/usr/include/
-
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/libuv.so* \
-		$(1)/usr/lib/
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/libuv.a \
-		$(1)/usr/lib/
-
-	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libuv.pc \
-		$(1)/usr/lib/pkgconfig/
+	$(call Build/InstallDev/cmake,$(1))
+	$(SED) 's,/usr/include,$$$${prefix}/include,g' $(1)/usr/lib/pkgconfig/libuv.pc
+	$(SED) 's,/usr/lib,$$$${prefix}/lib,g' $(1)/usr/lib/pkgconfig/libuv.pc
+	$(SED) 's,/usr/include,$$$${prefix}/include,g' $(1)/usr/lib/pkgconfig/libuv-static.pc
+	$(SED) 's,/usr/lib,$$$${prefix}/lib,g' $(1)/usr/lib/pkgconfig/libuv-static.pc
 endef
 
 define Package/libuv/install
 	$(INSTALL_DIR) $(1)/usr/lib/
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/libuv.so* \
-		$(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libuv.so* $(1)/usr/lib/
 endef
 
 $(eval $(call BuildPackage,libuv))

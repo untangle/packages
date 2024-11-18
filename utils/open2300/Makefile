@@ -1,4 +1,4 @@
-# 
+#
 # Copyright (C) 2010 segal.ubi.pt
 # Copyright (C) 2014 nunojpg@gmail.com
 # Copyright (C) 2015 dev@localnet.hu
@@ -10,19 +10,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=open2300
-PKG_VERSION:=1.12
-PKG_RELEASE:=5
-PKG_LICENSE:=GPL-2.0+
-PKG_LICENSE_FILES:=COPYING
+PKG_SOURCE_DATE:=2014-03-04
+PKG_SOURCE_VERSION:=1af8ae609da66f8e1b745533c19095c9758bfb0b
+PKG_RELEASE:=3
 
-PKG_SOURCE_PROTO:=svn
-PKG_SOURCE_URL:=http://www.lavrsen.dk/svn/open2300/trunk
-PKG_SOURCE_VERSION:=r12
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_CHECK_FORMAT_SECURITY:=0
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/wezm/open2300
+PKG_MIRROR_HASH:=761a198e988bb0d64bce6a2a6699625ef0bda7459b0ab05a256e234a2cdcbc09
 
 PKG_MAINTAINER:=Gabor SZOLLOSI <dev@localnet.hu>
+PKG_LICENSE:=GPL-2.0-or-later
+PKG_LICENSE_FILES:=COPYING
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -38,7 +36,7 @@ define Package/open2300/description
 endef
 
 MAKE_FLAGS += \
-	CFLAGS="$(TARGET_CFLAGS) -DVERSION=\"$(PKG_VERSION)\""
+	UNAME=Linux
 
 define Package/open2300/install
 	$(INSTALL_DIR) $(1)/usr/bin
@@ -60,8 +58,8 @@ define Package/open2300/install
 	$(INSTALL_DATA) ./files/open2300.conf $(1)/etc/
 
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/lib2300.so.1.11 $(1)/usr/lib/
-	ln -sf /usr/lib/lib2300.so.1.11 $(1)/usr/lib/lib2300.so
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/lib2300.so.1.11 $(1)/usr/lib/
+	$(LN) lib2300.so.1.11 $(1)/usr/lib/lib2300.so
 endef
 
 $(eval $(call BuildPackage,open2300))

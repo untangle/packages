@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=u2pnpd
-PKG_VERSION:=0.4
-PKG_RELEASE:=1
+PKG_VERSION:=0.5
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://github.com/mhei/u2pnpd/releases/download/v$(PKG_VERSION)
-PKG_HASH:=4f1c98655fd75ca5d760155490f5331656f39f96bc7ea5a7bf75311848df7e2a
+PKG_HASH:=863cf1b498b6704016ec5e84c07348b59d43a35d1332d1668f6f8968e1492210
 
-PKG_LICENSE:=GPL-2.0
+PKG_LICENSE:=GPL-2.0-only
 PKG_LICENSE_FILES:=COPYING
 
 PKG_MAINTAINER:=Michael Heimpold <mhei@heimpold.de>
@@ -38,6 +38,10 @@ define Package/u2pnpd/description
   to find it within the network neightboorhood of a well-known OS and the user
   can easily double-click on an icon to open the web frontend of this device without
   knowing the IP address.
+endef
+
+define Package/u2pnpd/conffiles
+/etc/config/u2pnpd
 endef
 
 define Package/u2pnpd/install

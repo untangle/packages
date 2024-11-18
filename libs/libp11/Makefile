@@ -8,17 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libp11
-PKG_VERSION:=0.4.7
+PKG_VERSION:=0.4.12
 PKG_RELEASE:=1
-PKG_HASH:=32e486d4279e09174b63eb263bc840016ebfa80b0b154390c0539b211aec0452
-
-PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
-PKG_LICENSE:=LGPL-2.1+
-PKG_LICENSE_FILES:=COPYING
 
 PKG_SOURCE_URL:=https://github.com/OpenSC/libp11/releases/download/$(PKG_NAME)-$(PKG_VERSION)/
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_HASH:=1e1a2533b3fcc45fde4da64c9c00261b1047f14c3f911377ebd1b147b3321cfd
 
+PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
+PKG_LICENSE:=LGPL-2.1-or-later
+PKG_LICENSE_FILES:=COPYING
+
+PKG_BUILD_PARALLEL:=1
 PKG_FIXUP:=libtool
 PKG_INSTALL:=1
 
@@ -29,7 +30,7 @@ define Package/libp11
   CATEGORY:=Libraries
   TITLE:=PKCS#11 wrapper library
   URL:=https://www.opensc-project.org/opensc/wiki/libp11
-  DEPENDS:=+libopenssl
+  DEPENDS:=+libopenssl +@OPENSSL_ENGINE
   CONFLICTS:=engine_pkcs11
 endef
 

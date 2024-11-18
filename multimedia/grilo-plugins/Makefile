@@ -1,6 +1,4 @@
 #
-# Copyright (C) 2006-2015 OpenWrt.org
-#
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
@@ -8,24 +6,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=grilo-plugins
-PKG_VERSION:=0.3.5
-PKG_RELEASE:=1
-
-PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
-
-PKG_LICENSE:=LGPLv2.1
-PKG_LICENSE_FILES:=COPYING
+PKG_VERSION:=0.3.16
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@GNOME/grilo-plugins/0.3/
-PKG_HASH:=2977827b8ecb3e15535236180e57dc35e85058d111349bdb6a1597e62a5068fb
+PKG_SOURCE_URL:=@GNOME/grilo-plugins/$(basename $(PKG_VERSION))
+PKG_HASH:=fe6f4dbe586c6b8ba2406394e202f22d009d642a96eb3a54f32f6a21d084cdcb
 
-PKG_BUILD_DEPENDS:=glib2 grilo
-
-PKG_INSTALL:=1
+PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
+PKG_LICENSE:=LGPL-2.1-or-later
+PKG_LICENSE_FILES:=COPYING
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
+include $(INCLUDE_DIR)/meson.mk
 
 define Package/grilo-plugins/Default
   SECTION:=multimedia
@@ -43,15 +37,34 @@ endef
 
 define Package/grilo/decription
   Grilo is a framework that provides access to different sources of
-  multimedia content, using a pluggable system. This package contains 
+  multimedia content, using a pluggable system. This package contains
   plugins to get information from a number of sources.
 endef
 
-CONFIGURE_ARGS += \
-        --enable-static \
-        --without-libiconv-prefix \
-        --without-libintl-prefix \
-        --without-x \
+MESON_ARGS += \
+	-Denable-bookmarks=no \
+	-Denable-chromaprint=$(if $(CONFIG_PACKAGE_grilo-plugins-chromaprint),yes,no) \
+	-Denable-dleyna=$(if $(CONFIG_PACKAGE_grilo-plugins-dleyna),yes,no) \
+	-Denable-dmap=$(if $(CONFIG_PACKAGE_grilo-plugins-dmap),yes,no) \
+	-Denable-filesystem=no \
+	-Denable-flickr=no \
+	-Denable-freebox=no \
+	-Denable-gravatar=$(if $(CONFIG_PACKAGE_grilo-plugins-gravatar),yes,no) \
+	-Dhelp=no \
+	-Denable-local-metadata=no \
+	-Denable-lua-factory=no \
+	-Denable-magnatune=$(if $(CONFIG_PACKAGE_grilo-plugins-magnatune),yes,no) \
+	-Denable-metadata-store=$(if $(CONFIG_PACKAGE_grilo-plugins-metadata-store),yes,no) \
+	-Denable-optical-media=no \
+	-Denable-podcasts=no \
+	-Denable-raitv=$(if $(CONFIG_PACKAGE_grilo-plugins-raitv),yes,no) \
+	-Denable-shoutcast=$(if $(CONFIG_PACKAGE_grilo-plugins-shoutcast),yes,no) \
+	-Denable-thetvdb=no \
+	-Denable-tmdb=$(if $(CONFIG_PACKAGE_grilo-plugins-tmdb),yes,no) \
+	-Denable-tracker=no \
+	-Denable-tracker3=no \
+	-Denable-youtube=no \
+	--wrap-mode=nodownload
 
 define Package/grilo-plugins/install
 	$(INSTALL_DIR) $(1)/usr/lib/grilo-0.3
@@ -79,11 +92,12 @@ endef
 
 $(eval $(call BuildPackage,grilo-plugins))
 
+$(eval $(call BuildPlugin,chromaprint,Chromaprint,chromaprint,+libgstreamer1,30))
 $(eval $(call BuildPlugin,dleyna,DLNA sharing,dleyna,,30))
 $(eval $(call BuildPlugin,dmap,DAAP and DPAP sharing,daap dpap,libdmapsharing,30))
 $(eval $(call BuildPlugin,gravatar,Gravatar provider,gravatar,,30))
-$(eval $(call BuildPlugin,jamendo,Jamendo sharing,jamendo,,30))
 $(eval $(call BuildPlugin,magnatune,Magnatune sharing,magnatune,,30))
-$(eval $(call BuildPlugin,opensubtitles,Openi subtitles provider,opensubtitles,,30))
+$(eval $(call BuildPlugin,metadata-store,Metadata Store,metadatastore,,30))
 $(eval $(call BuildPlugin,raitv,Rai.tv sharing,raitv,,30))
 $(eval $(call BuildPlugin,shoutcast,SHOUTcast sharing,shoutcast,,30))
+$(eval $(call BuildPlugin,tmdb,TMDb,tmdb,+json-glib,30))

@@ -1,6 +1,4 @@
 #
-# Copyright (C) 2007-2017 OpenWrt.org
-#
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
@@ -8,38 +6,41 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=subversion
+PKG_VERSION:=1.14.3
 PKG_RELEASE:=1
-PKG_VERSION:=1.10.0
+
 PKG_SOURCE_URL:=@APACHE/subversion
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_HASH:=2cf23f3abb837dea0585a6b0ebd70e80e01f95bddef7c1aa097c18e3eaa6b584
+PKG_HASH:=949efd451a09435f7e8573574c71c7b71b194d844890fa49cd61d2262ea1a440
+
+PKG_MAINTAINER:=Aleksey Vasilenko <aleksey.vasilenko@gmail.com>
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=Val Kulkov <val.kulkov@gmail.com>
+PKG_CPE_ID:=cpe:/a:apache:subversion
 
 PKG_FIXUP:=autoreconf
 PKG_MACRO_PATHS:=build/ac-macros
+PKG_BUILD_PARALLEL:=1
+PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
-
 
 define Package/subversion/Default
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=Version Control Systems
   TITLE:=A compelling replacement for CVS
-  DEPENDS:=+zlib +libsqlite3 +PACKAGE_unixodbc:unixodbc +libapr +libaprutil +libmagic \
-  	$(ICONV_DEPENDS) $(INTL_DEPENDS)
-  URL:=http://subversion.apache.org/
+  DEPENDS:=+PACKAGE_unixodbc:unixodbc +libaprutil +libmagic +libsqlite3 $(ICONV_DEPENDS) $(INTL_DEPENDS)
+  URL:=https://subversion.apache.org/
 endef
 
 define Package/subversion/Default/description
-	Subversion is a free/open-source version control system. That is,
-	Subversion manages files and directories, and the changes made to them,
-	over time. This allows you to recover older versions of your data, or
-	examine the history of how your data changed. In this regard, many
-	people think of a version control system as a sort of time machine.
+  Subversion is a free/open-source version control system. That is,
+  Subversion manages files and directories, and the changes made to them,
+  over time. This allows you to recover older versions of your data, or
+  examine the history of how your data changed. In this regard, many
+  people think of a version control system as a sort of time machine.
 endef
 
 define Package/subversion-libs
@@ -78,41 +79,18 @@ define Package/subversion-server/conffiles
 /etc/config/subversion
 endef
 
-TARGET_CFLAGS += $(FPIC)
-TARGET_CPPFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-APU_LIBS=$(shell $(STAGING_DIR)/usr/bin/apu-1-config --link-libtool --libs)
-
 CONFIGURE_ARGS += \
-	--with-apr="$(STAGING_DIR)/usr/bin/apr-1-config" \
-	--with-apr-util="$(STAGING_DIR)/usr/bin/apu-1-config" \
-	--with-libmagic="$(STAGING_DIR)/usr" \
-	--disable-mod-activation \
-	--without-ruby-sitedir \
+	--with-apr=$(STAGING_DIR)/usr/bin/apr-1-config \
+	--with-apr-util=$(STAGING_DIR)/usr/bin/apu-1-config \
 	--without-swig \
-	--without-jikes \
-	--without-junit \
 	--without-berkeley-db \
 	--without-apxs \
 	--without-sasl \
 	--with-lz4=internal \
-	--with-utf8proc=internal
+	--with-utf8proc=internal \
+	$(call autoconf_bool,INTL_FULL,nls)
 
-ifdef $(INTL_FULL)
-	CONFIGURE_ARGS += --enable-nls
-else
-	CONFIGURE_ARGS += --disable-nls
-endif
-
-CONFIGURE_VARS += \
-	LDFLAGS="$(TARGET_LDFLAGS) $(APU_LIBS) -lcrypt -lm \
-		-lz -lpthread $(if $(INTL_FULL),-lintl)"
-	CPPFLAGS="$(TARGET_CPPFLAGS)"
-
-define Build/Compile
-	$(MAKE) -C $(PKG_BUILD_DIR) \
-		DESTDIR="$(PKG_INSTALL_DIR)" \
-		all local-install
-endef
+TARGET_LDFLAGS += $(if $(INTL_FULL),-lintl)
 
 define Package/subversion-libs/install
 	$(INSTALL_DIR) $(1)/usr/lib

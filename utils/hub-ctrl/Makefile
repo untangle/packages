@@ -9,13 +9,13 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hub-ctrl
 PKG_VERSION:=1.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/codazoda/hub-ctrl.c.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE_VERSION:=3eef0240fac90067d081551e9f73dfa741d94a9e
-PKG_LICENSE:=GPL-2.0+
+PKG_LICENSE:=GPL-2.0-or-later
 
 PKG_MAINTAINER:=Simon Peter <probono@puredarwin.org>
 
@@ -28,14 +28,14 @@ include $(INCLUDE_DIR)/package.mk
 define Package/hub-ctrl
   SECTION:=utils
   CATEGORY:=Utilities
-  TITLE:=Control USB power on a port by port basis 
+  TITLE:=Control USB power on a port by port basis
   URL:=https://github.com/codazoda/hub-ctrl.c
   DEPENDS:=+libusb-compat
 endef
 
 define Package/hub-ctrl/description
   Control USB power on a port by port basis on some USB hubs.
-  This only works on USB hubs that have the hardware necessary 
+  This only works on USB hubs that have the hardware necessary
   to allow software controlled power switching.
   Most hubs DO NOT include the hardware.
 endef

@@ -8,23 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=attr
-PKG_REV:=cfd8e6ef491a7a5ff900ba2ba3deff7d0bebb0a6
-PKG_VERSION:=20170915
-PKG_RELEASE:=1
+PKG_VERSION:=2.5.2
+PKG_RELEASE:=3
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://git.savannah.gnu.org/git/attr.git
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=$(PKG_REV)
-PKG_MIRROR_HASH:=3c4f9331fd73192801a30071a379f07b48699adffe0d560133a740ade029a04c
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=@SAVANNAH/attr
+PKG_HASH:=f2e97b0ab7ce293681ab701915766190d607a1dba7fae8a718138150b700a70b
+
 PKG_MAINTAINER:=Maxim Storchak <m.storchak@gmail.com>
-
-PKG_LICENSE:=LGPL-2.1 GPL-2.0
-PKG_LICENSE_FILES:=doc/COPYING doc/COPYING.LGPL
+PKG_CPE_ID:=cpe:/a:attr_project:attr
 
 PKG_INSTALL:=1
-PKG_FIXUP:=autoreconf
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -43,6 +38,8 @@ $(call Package/attr/Default)
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE+=utils
+  LICENSE:=GPL-2.0-or-later
+  LICENSE_FILES:=doc/COPYING
   DEPENDS:=+libattr
 endef
 
@@ -51,6 +48,8 @@ $(call Package/attr/Default)
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE+=library
+  LICENSE:=LGPL-2.1-or-later
+  LICENSE_FILES:=doc/COPYING.LGPL
 endef
 
 define Package/libattr/description
@@ -85,8 +84,8 @@ define Package/attr/conffiles
 endef
 
 define Build/InstallDev
-	mkdir -p $(1)/usr/include
-	mkdir -p $(1)/usr/lib/pkgconfig
+	$(INSTALL_DIR) $(1)/usr/include
+	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
 	$(CP) $(PKG_INSTALL_DIR)/usr/{include,lib} $(1)/usr/
 endef
 

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2012-2018 OpenWrt.org
+# Copyright (C) 2012-2021 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -7,18 +7,21 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=aria2
-PKG_VERSION:=1.34.0
+PKG_VERSION:=1.37.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://github.com/aria2/aria2/releases/download/release-$(PKG_VERSION)/
-PKG_HASH:=3a44a802631606e138a9e172a3e9f5bcbaac43ce2895c1d8e2b46f30487e77a3
+PKG_HASH:=60a420ad7085eb616cb6e2bdf0a7206d68ff3d37fb5a956dc44242eb2f79b66b
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+PKG_BUILD_FLAGS:=gc-sections lto
 
 PKG_MAINTAINER:=Imre Kaloz <kaloz@openwrt.org>, \
 	Hsing-Wang Liao <kuoruan@gmail.com>
 PKG_LICENSE:=GPLv2
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:tatsuhiro_tsujikawa:aria2
 
 PKG_CONFIG_DEPENDS := \
 	CONFIG_ARIA2_NOSSL \
@@ -38,6 +41,7 @@ PKG_CONFIG_DEPENDS := \
 	CONFIG_ARIA2_WEBSOCKET
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
 define Package/aria2/config
   source "$(SOURCE)/Config.in"
@@ -79,6 +83,10 @@ CONFIGURE_ARGS += \
 	$(if $(CONFIG_ARIA2_COOKIE),--with,--without)-sqlite3 \
 	--without-libuv \
 	--with-libz
+
+define Package/aria2/conffiles
+/etc/config/aria2
+endef
 
 define Package/aria2/install
 	$(INSTALL_DIR) $(1)/usr/bin

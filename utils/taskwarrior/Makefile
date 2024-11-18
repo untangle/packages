@@ -8,20 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=taskwarrior
-PKG_VERSION:=2.4.4
-PKG_RELEASE:=1
-
-PKG_LICENSE:=MIT
+PKG_VERSION:=2.5.3
+PKG_RELEASE:=3
 
 PKG_SOURCE:=task-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://www.taskwarrior.org/download/
-PKG_HASH:=7ff406414e0be480f91981831507ac255297aab33d8246f98dbfd2b1b2df8e3b
-PKG_MAINTAINER:=Luka Perkov <luka@openwrt.org>
-
+PKG_SOURCE_URL:=https://www.taskwarrior.org/download
+PKG_HASH:=7243d75e0911d9e2c9119ad94a61a87f041e4053e197f7280c42410aa1ee963b
 PKG_BUILD_DIR:=$(BUILD_DIR)/task-$(PKG_VERSION)
 
-PKG_BUILD_PARALLEL:=1
-PKG_INSTALL:=1
+PKG_MAINTAINER:=
+PKG_LICENSE:=MIT
+PKG_LICENSE_FILES:=LICENSE
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -31,10 +28,8 @@ define Package/taskwarrior
   SECTION:=utils
   CATEGORY:=Utilities
   DEPENDS:=+libstdcpp +libuuid +libgnutls
-  URL:=http://taskwarrior.org/
+  URL:=https://taskwarrior.org/
 endef
-
-TARGET_LDFLAGS += -ldl
 
 define Package/taskwarrior/description
  taskwarrior is a command-line todo list manager

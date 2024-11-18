@@ -1,26 +1,40 @@
-include  $(TOPDIR)/rules.mk
+include $(TOPDIR)/rules.mk
 
 PKG_NAME:=syslog-ng
-PKG_VERSION:=3.9.1
-PKG_RELEASE:=3
+PKG_VERSION:=4.7.1
+PKG_RELEASE:=1
 
-PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
+PKG_MAINTAINER:=Josef Schlehofer <pepe.schlehofer@gmail.com>
+PKG_LICENSE:=LGPL-2.1-or-later GPL-2.0-or-later
+PKG_LICENSE_FILES:=COPYING LGPL.txt GPL.txt
+PKG_CPE_ID:=cpe:/a:balabit:syslog-ng
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/balabit/syslog-ng/releases/download/$(PKG_NAME)-$(PKG_VERSION)/
-PKG_HASH:=5678856a550ae790618fabde9d1447f932ce7a9080d55dca8fc5df1202c70a17
+PKG_SOURCE_URL:=https://github.com/syslog-ng/syslog-ng/releases/download/$(PKG_NAME)-$(PKG_VERSION)/
+PKG_HASH:=5477189a2d12325aa4faebfcf59f5bdd9084234732f0c3ec16dd253847dacf1c
 
+PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
+
+PKG_BUILD_DEPENDS:= \
+	HOST_OS_MACOS:fakeuname/host \
+
+PKG_CONFIG_DEPENDS:= \
+	CONFIG_IPV6 \
+	CONFIG_LIBCURL_ZLIB
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
+ifeq ($(CONFIG_HOST_OS_MACOS),y)
+    include ../../utils/fakeuname/fakeuname.mk
+endif
 
 define Package/syslog-ng
   SECTION:=admin
   CATEGORY:=Administration
-  DEPENDS:=+libpcre +glib2 +libeventlog +libopenssl +libuuid +libcurl
   TITLE:=A powerful syslog daemon
-  URL:=http://www.balabit.com/network-security/syslog-ng/opensource-logging-system/
+  URL:=https://www.syslog-ng.com/products/open-source-log-management/
+  DEPENDS:=+libpcre2 +glib2 +libopenssl +libpthread +librt +libdbi +libjson-c +libcurl +libuuid +SYSLOGNG_LOGROTATE:logrotate +LIBCURL_ZLIB:zlib
 endef
 
 define Package/syslog-ng/description
@@ -32,6 +46,32 @@ endef
 define Package/syslog-ng/conffiles
 /etc/syslog-ng.conf
 /etc/syslog-ng.d/
+/etc/scl.conf
+endef
+
+define Package/syslog-ng/config
+config SYSLOGNG_LOGROTATE
+	bool "Logrotate support"
+	depends on PACKAGE_syslog-ng
+	default n
+	help
+	  It adds support for logrotate functionality.
+
+config SYSLOGNG_LOGROTATE_MAXSIZE
+	string "Maximum size of /var/log/messages log file"
+	depends on SYSLOGNG_LOGROTATE
+	default "1M"
+	help
+	  Log files are rotated when they grow bigger than defined size bytes.
+
+config SYSLOGNG_LOGROTATE_ROTATE_COUNT
+	int "Maximum rotation count for /var/log/messages log file"
+	depends on SYSLOGNG_LOGROTATE
+	default 1
+	help
+	  Log files are rotated count times before being removed or mailed to
+	  the address specified in a mail directive. If count is 0, old
+	  versions are removed rather than rotated.
 endef
 
 define Build/Configure
@@ -39,39 +79,81 @@ define Build/Configure
 	$(Build/Configure/Default)
 endef
 
-CONFIGURE_ARGS += \
-  $(call autoconf_bool,CONFIG_IPV6,ipv6) \
-         --disable-dependency-tracking \
-         --disable-amqp \
-         --disable-tcp-wrapper \
-         --disable-glibtest \
-         --disable-mongodb \
-         --disable-java \
-         --disable-json \
-         --disable-python \
-         --disable-spoof-source \
-         --disable-sql \
-         --disable-linux-caps \
-	 --disable-smtp \
-	 --disable-redis \
-         --enable-prce \
+LOGROTATE_MAXSIZE:=$(call qstrip,$(CONFIG_SYSLOGNG_LOGROTATE_MAXSIZE))
+LOGROTATE_ROTATE:=$(call qstrip,$(CONFIG_SYSLOGNG_LOGROTATE_ROTATE_COUNT))
 
-TARGET_CPPFLAGS += \
-  -I$(STAGING_DIR)/usr/include/eventlog
+CONFIGURE_ARGS +=  \
+	--disable-afsnmp \
+	$(call autoconf_bool,CONFIG_IPV6,ipv6) \
+	--disable-tcp-wrapper \
+	--disable-spoof-source \
+	--disable-sql \
+	--disable-linux-caps \
+	--with-jsonc=system \
+	--enable-cpp=no \
+	--enable-json=yes \
+	$(if $(CONFIG_LIBCURL_ZLIB),--enable-http=yes,--enable-http=no) \
+	--disable-smtp \
+	--disable-mqtt \
+	--disable-redis \
+	--disable-dependency-tracking \
+	--disable-python \
+	--disable-geoip2 \
+	--disable-java \
+	--disable-java-modules \
+	--with-librabbitmq-client=no \
+	--with-mongoc=no
 
 CONFIGURE_VARS += \
-  LIBDBI_CFLAGS="-I$(STAGING_DIR)/usr/include"
+	$(if $(CONFIG_HOST_OS_MACOS),PATH=$(FAKEUNAME_PATH):$(PATH)) \
+	LIBDBI_CFLAGS="-I$(STAGING_DIR)/usr/include"
 
 define Package/syslog-ng/install
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(MAKE) -C $(PKG_BUILD_DIR) \
-		install-sbinPROGRAMS install-libLTLIBRARIES \
-		install-moduleLTLIBRARIES DESTDIR="$(1)"
+	cd $(PKG_BUILD_DIR); make DESTDIR=$(1) install
+
+	$(call libtool_remove_files,$(1)) # This removes .la files in folder (including subfolders) /usr/lib
+	rm -rf $(1)/usr/lib/pkgconfig \
+	$(1)/usr/lib/*.a \
+	$(1)/usr/include \
+	$(1)/var
+
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/syslog-ng.init $(1)/etc/init.d/syslog-ng
+	$(INSTALL_DIR) $(1)/etc/syslog-ng.d
 	$(INSTALL_DATA) ./files/syslog-ng.conf $(1)/etc
-	$(INSTALL_DIR) $(1)/etc/syslog-ng.d/
-	$(call libtool_remove_files,$(1))
+	touch $(1)/etc/syslog-ng.d/.keep
+
+	$(INSTALL_DIR) $(1)/sbin
+	$(INSTALL_BIN) ./files/logread $(1)/sbin
+
+	$(INSTALL_DIR) $(1)/usr/share/syslog-ng/include/
+	$(CP) -r ./files/scl $(1)/usr/share/syslog-ng/include/
+
+ifneq ($(strip $(CONFIG_SYSLOGNG_LOGROTATE)),)
+	$(INSTALL_DIR) $(1)/etc/logrotate.d
+	sed \
+		-e 's#@MAXSIZE@#$(LOGROTATE_MAXSIZE)#g' \
+		-e 's#@ROTATE@#$(LOGROTATE_ROTATE)#g' \
+		./files/syslog-ng.logrotate > $(1)/etc/logrotate.d/syslog-ng.conf
+endif
+endef
+
+define Package/syslog-ng/postinst
+#!/bin/sh
+
+[ -n "$$IPKG_INSTROOT" ] || {
+/etc/init.d/syslog-ng enable
+/etc/init.d/syslog-ng restart
+}
+endef
+
+define Package/syslog-ng/prerm
+#!/bin/sh
+
+[ -n "$$IPKG_INSTROOT" ] || {
+/etc/init.d/syslog-ng disable
+/etc/init.d/syslog-ng stop
+}
 endef
 
 $(eval $(call BuildPackage,syslog-ng))

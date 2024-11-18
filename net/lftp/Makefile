@@ -8,29 +8,31 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=lftp
-PKG_VERSION:=4.8.3
-PKG_RELEASE:=1
+PKG_VERSION:=4.9.2
+PKG_RELEASE:=3
+
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=http://lftp.tech/ftp/ \
+PKG_SOURCE_URL:=https://lftp.tech/ftp/ \
 		https://mirror.csclub.uwaterloo.ca/gentoo-distfiles/distfiles/
-		
-PKG_HASH:=de7aee451afaa1aa391f7076b5f602922c2da0e05524a8d8fea413eda83cc78b
+PKG_HASH:=c517c4f4f9c39bd415d7313088a2b1e313b2d386867fe40b7692b83a20f0670d
 
-
-PKG_LICENSE:=GPL-3.0+
+PKG_MAINTAINER:=Federico Di Marco <fededim@gmail.com>
+PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:lftp_project:lftp
 
-include $(INCLUDE_DIR)/uclibc++.mk
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+
 include $(INCLUDE_DIR)/package.mk
 
 define Package/lftp
   SUBMENU:=File Transfer
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+libncurses +libopenssl +libreadline $(CXX_DEPENDS) +libexpat +zlib
+  DEPENDS:=+libncurses +libopenssl +libreadline +libstdcpp +libexpat +zlib
   TITLE:=a sophisticated file transfer program with command line interface.
-  MAINTAINER:=Federico Di Marco <fededim@gmail.com>
-  URL:=http://lftp.yar.ru/
+  URL:=https://lftp.yar.ru/
 endef
 
 define Package/lftp/description
@@ -48,16 +50,15 @@ CONFIGURE_ARGS += \
 	--without-gnutls \
 	--without-libidn2 \
 	--without-libresolv \
+	--with-expat="$(STAGING_DIR)/usr" \
 	--with-openssl="$(STAGING_DIR)/usr" \
 	--with-readline="$(STAGING_DIR)/usr" \
 	--with-zlib="$(STAGING_DIR)/usr" \
 	--disable-static
 
-TARGET_CXXFLAGS+= -std=c++11
-
 define Package/lftp/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/lftp $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/lftp $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,lftp))

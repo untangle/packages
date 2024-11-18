@@ -8,14 +8,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=tdb
-PKG_VERSION:=1.3.15
+PKG_VERSION:=1.4.3
 PKG_RELEASE:=2
 PKG_LICENSE:=GPL-2.0
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://www.samba.org/ftp/tdb/
-PKG_HASH:=b4a1bf3833601bd9f10aff363cb750860aef9ce5b4617989239923192f946728
+PKG_HASH:=c8058393dfa15f47e11ebd2f1d132693f0b3b3b8bf22d0201bfb305026f88a1b
 
+PKG_BUILD_DEPENDS:=python3/host
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -23,10 +24,9 @@ include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/kernel.mk
 # for $(VERSION_DIST)
 include $(INCLUDE_DIR)/version.mk
-#include $(INCLUDE_DIR)/version.mk
 
 define Package/tdb
-  SUBMENU:=database
+  SUBMENU:=Database
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=Trivial Database
@@ -48,12 +48,9 @@ define Build/InstallDev
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/* $(1)/usr/lib/
 endef
 
-CONFIGURE_ARGS = \
-	--target=$(GNU_TARGET_NAME) \
-	--build=$(GNU_HOST_NAME) \
+CONFIGURE_ARGS:= \
 	--cross-compile \
 	--cross-answers="$(PKG_BUILD_DIR)/cache.txt" \
-	--program-prefix="" \
 	--prefix=$(CONFIGURE_PREFIX) \
 	--exec-prefix=$(CONFIGURE_PREFIX) \
 	--bindir=$(CONFIGURE_PREFIX)/bin \
@@ -64,9 +61,6 @@ CONFIGURE_ARGS = \
 	--localstatedir=/var \
 	--mandir=$(CONFIGURE_PREFIX)/man \
 	--infodir=$(CONFIGURE_PREFIX)/info \
-	$(DISABLE_IPV6)
-
-CONFIGURE_ARGS += \
 	--disable-python \
 	--disable-rpath \
 	--disable-rpath-install \

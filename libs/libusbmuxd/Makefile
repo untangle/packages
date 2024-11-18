@@ -8,28 +8,25 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libusbmuxd
-PKG_VERSION:=1.1.0
-PKG_RELEASE:=2
+PKG_VERSION:=2.1.0
+PKG_RELEASE:=1
 
-PKG_MAINTAINER:=Lukasz Baj <l.baj@radytek.com>
-PKG_LICENSE:=LGPL-2.1+
-PKG_LICENSE_FILES:=COPYING.LGPLv2.1
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
+PKG_SOURCE_URL:=https://github.com/libimobiledevice/libusbmuxd/releases/download/$(PKG_VERSION)
+PKG_HASH:=c35bf68f8e248434957bd5b234c389b02206a06ecd9303a7fb931ed7a5636b16
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/libimobiledevice/libusbmuxd.git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=4397b3376dc4e4cb1c991d0aed61ce6482614196
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_HASH:=e145b567cdefb1d2536f3eec863769c77474ce9a5d9c4c81ab0a75dc6fe3056a
+PKG_MAINTAINER:=Rosen Penev <rosenp@gmail.com>
+PKG_CPE_ID:=cpe:/a:libimobiledevice:libusbmuxd
 
-PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/libusbmuxd/Default
   TITLE:=USB multiplexing daemon
-  URL:=http://www.libimobiledevice.org/
+  URL:=https://www.libimobiledevice.org/
+  SUBMENU:=libimobiledevice
 endef
 
 define Package/libusbmuxd/Default/description
@@ -45,7 +42,9 @@ define Package/libusbmuxd
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE+= library
-  DEPENDS:=+libplist +libpthread +libxml2 +zlib
+  DEPENDS:=+libplist +libimobiledevice-glue +libpthread +libxml2 +zlib
+  PKG_LICENSE:=LGPL-2.1-or-later
+  PKG_LICENSE_FILES:=COPYING
 endef
 
 define Package/libusbmuxd/description
@@ -59,6 +58,7 @@ define Package/libusbmuxd-utils
   CATEGORY:=Utilities
   TITLE+= utilies
   DEPENDS:=+libusbmuxd
+  LICENSE:=GPL-2.0-or-later
 endef
 
 define Package/libusbmuxd-utils/description
@@ -66,25 +66,27 @@ define Package/libusbmuxd-utils/description
   This package contains the libusbmuxd utilities.
 endef
 
-TARGET_CFLAGS += $(FPIC)
+CONFIGURE_ARGS += \
+	--disable-static
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/*.h $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libusbmuxd.so* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libusbmuxd-2.0.so* $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libusbmuxd.pc $(1)/usr/lib/pkgconfig/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libusbmuxd-2.0.pc $(1)/usr/lib/pkgconfig/
 endef
 
 define Package/libusbmuxd/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libusbmuxd.so.* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libusbmuxd-2.0.so.* $(1)/usr/lib/
 endef
 
 define Package/libusbmuxd-utils/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(CP) $(PKG_INSTALL_DIR)/usr/bin/iproxy $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/iproxy $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/inetcat $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,libusbmuxd))

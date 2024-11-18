@@ -8,25 +8,25 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libupnpp
-PKG_VERSION:=0.14.0
+PKG_VERSION:=0.26.5
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://www.lesbonscomptes.com/upmpdcli/downloads
-PKG_HASH:=13027f8e2b5341d00370ccf34eb8845f1bce73ec58890c02a38dc639e9f91b13
-PKG_MAINTAINER:=Petko Bordjukov <bordjukov@gmail.com>
-PKG_LICENSE:=GPL-2.0
+PKG_SOURCE_URL:=https://www.lesbonscomptes.com/upmpdcli/downloads
+PKG_HASH:=b0e089783c5893c16afe23d90a6ee6947c2ec34ca6c3cf555622f7d9cc2b2b3c
+
+PKG_MAINTAINER:=
+PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
 
-PKG_INSTALL:=1
-
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/meson.mk
 
 define Package/libupnpp
   SECTION:=libs
   CATEGORY:=Libraries
-  URL:=http://www.lesbonscomptes.com/upmpdcli
-  DEPENDS+= +libstdcpp +libexpat +librt +libcurl +libupnp
+  URL:=https://www.lesbonscomptes.com/upmpdcli
+  DEPENDS+=+libnpupnp
   TITLE:=The libupnpp C++ library wraps libupnp for easier use by upmpdcli and upplay
 endef
 
@@ -39,8 +39,9 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/libupnpp $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libupnpp.so* $(1)/usr/lib/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libupnpp.la $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libupnpp.{a,so*} $(1)/usr/lib/
+	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libupnpp.pc $(1)/usr/lib/pkgconfig/
 endef
 
 define Package/libupnpp/install

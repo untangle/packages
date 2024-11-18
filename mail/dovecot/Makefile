@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2014 OpenWrt.org
+# Copyright (C) 2006-2018 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,17 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dovecot
-PKG_VERSION:=2.3.1
-PKG_RELEASE:=2
+PKG_VERSION:=2.3.21
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://www.dovecot.org/releases/2.3
-PKG_HASH:=0883821b97fd02a084a84b9469a681f7e6edc56541d854b5419d98891c51fb93
-PKG_LICENSE:=LGPL-2.1 MIT BSD-3-Clause Unique
-PKG_LICENSE_FILES:=COPYING COPYING.LGPL COPYING.MIT
-PKG_MAINTAINER:=Lucian Cristian <lucian.cristian@gmail.com>
+PKG_SOURCE_URL:=https://dovecot.org/releases/2.3
+PKG_HASH:=05b11093a71c237c2ef309ad587510721cc93bbee6828251549fc1586c36502d
 
-PKG_BUILD_DEPENDS:=libiconv
+PKG_MAINTAINER:=Lucian Cristian <lucian.cristian@gmail.com>
+PKG_LICENSE:=LGPL-2.1-only MIT BSD-3-Clause
+PKG_LICENSE_FILES:=COPYING COPYING.LGPL COPYING.MIT
+PKG_CPE_ID:=cpe:/a:dovecot:dovecot
+
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_DOVECOT_GSSAPI \
 	CONFIG_DOVECOT_LDAP \
@@ -29,16 +30,23 @@ PKG_CONFIG_DEPENDS:= \
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
+# iconv is needed when compiling with MySQL support. iconv will also be used by
+# dovecot itself.
+include $(INCLUDE_DIR)/nls.mk
+
+# need iconv.m4, otherwise error during autoreconf
+PKG_BUILD_DEPENDS:=gettext-full
 
 define Package/dovecot
   SECTION:=mail
   CATEGORY:=Mail
-  DEPENDS:=+DOVECOT_GSSAPI:krb5-libs +DOVECOT_LDAP:libopenldap +DOVECOT_MYSQL:libmysqlclient +DOVECOT_PGSQL:libpq +DOVECOT_SQLITE:libsqlite3 +libopenssl +librt +zlib +libbz2 +libcap +DOVECOT_ICU:icu
   TITLE:=An IMAP and POP3 daemon
   URL:=https://www.dovecot.org/
-  USERID:=dovecot=59:dovecot=59
+  DEPENDS:=+DOVECOT_GSSAPI:krb5-libs +DOVECOT_LDAP:libopenldap +DOVECOT_MYSQL:libmysqlclient +DOVECOT_PGSQL:libpq +DOVECOT_SQLITE:libsqlite3 +libopenssl +librt +zlib +libbz2 +libcap +DOVECOT_ICU:icu $(ICONV_DEPENDS)
+  USERID:=dovecot=59:dovecot=59 dovenull=60:dovenull=60
   ABI_VERSION:=$(PKG_VERSION)
 endef
 
@@ -47,43 +55,10 @@ define Package/dovecot/description
 endef
 
 define Package/dovecot/config
-        menu "Select dovecot build options"
-                depends on PACKAGE_dovecot
-                config DOVECOT_GSSAPI
-                        bool "GSSAPI support"
-                        default n
-                        help
-                          Implements GSSAPI support in dovecot.
-                config DOVECOT_LDAP
-                        bool "LDAP support"
-                        default n
-                        help
-                          Implements LDAP support in dovecot.
-                config DOVECOT_MYSQL
-                        bool "MYSQL support"
-                        default n
-                        help
-                          Implements MYSQL support in dovecot.
-                config DOVECOT_PGSQL
-                        bool "PostgreSQL support"
-                        default n
-                        help
-                          Implements PostgreSQL support in dovecot.
-                config DOVECOT_SQLITE
-                        bool "SQLite support"
-                        default n
-                        help
-                          Implements SQLite DB support in dovecot.
-                config DOVECOT_ICU
-                        bool "Enable i18n features"
-                        default n
-                        help
-                          Enable ICU (International Components for Unicode) support.
-        endmenu
+	source "$(SOURCE)/Config.in"
 endef
 
 define Package/dovecot/conffiles
-/etc/init.d/dovecot
 /etc/dovecot/
 endef
 
@@ -95,12 +70,14 @@ define Package/dovecot-utils
 endef
 
 CONFIGURE_ARGS += \
+	--libexecdir=/usr/libexec \
+	--without-libunwind \
 	--without-pam \
-	--with-moduledir=/usr/lib/dovecot/modules \
 	--with-notify=dnotify \
 	--without-lzma \
 	--without-lz4 \
 	--without-sodium \
+	--without-zstd \
 	$(if $(CONFIG_DOVECOT_GSSAPI),--with-gssapi=yes,--with-gssapi=no) \
 	$(if $(CONFIG_DOVECOT_LDAP),--with-ldap=yes,--with-ldap=no) \
 	$(if $(CONFIG_DOVECOT_MYSQL),--with-mysql=yes,--with-mysql=no) \
@@ -119,31 +96,37 @@ CONFIGURE_VARS += \
 	lib_cv_va_copy=yes \
 	lib_cv_va_copy=yes \
 	lib_cv___va_copy=yes \
-	lib_cv_va_val_copy=yes
+	lib_cv_va_val_copy=yes \
+	ac_cv_prog_KRB5CONFIG="krb5-config"
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/dovecot $(1)/usr/include/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/dovecot $(1)/usr/lib/
-	rm -f $(1)/usr/lib/dovecot/*.la
+	$(call libtool_remove_files,$(1))
 endef
 
 
 define Package/dovecot/install
-	$(INSTALL_DIR)  $(1)/etc/init.d \
-			$(1)/etc/dovecot \
-			$(1)/usr/share/doc/dovecot \
-			$(1)/usr/lib/dovecot \
-			$(1)/usr/bin \
-			$(1)/usr/sbin
-	$(CP) $(PKG_INSTALL_DIR)/etc/dovecot/* $(1)/etc/dovecot/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/dovecot/* $(1)/usr/lib/dovecot/
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/doc/dovecot/example-config $(1)/usr/share/doc/dovecot/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/doveconf $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/* $(1)/usr/sbin/
+	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/dovecot.init $(1)/etc/init.d/dovecot
+
+	$(INSTALL_DIR) $(1)/etc/dovecot
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/doc/dovecot/example-config/* $(1)/etc/dovecot/
+
+	$(INSTALL_DIR) $(1)/usr/lib/dovecot
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/dovecot/* $(1)/usr/lib/dovecot/
 	rm  $(1)/usr/lib/dovecot/dovecot-config
-	find $(1)/usr/lib/dovecot/ -name "*.a" -o -name "*.la" | xargs rm
+	find $(1)/usr/lib/dovecot/ -name "*.a" -o -name "*.la" | $(XARGS) rm -f
+
+	$(INSTALL_DIR) $(1)/usr/libexec/dovecot
+	$(CP) $(PKG_INSTALL_DIR)/usr/libexec/dovecot/* $(1)/usr/libexec/dovecot/
+
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/doveconf $(1)/usr/bin/
+
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/* $(1)/usr/sbin/
 endef
 
 define Package/dovecot-utils/install

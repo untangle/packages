@@ -6,16 +6,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mc
-PKG_VERSION:=4.8.21
+PKG_VERSION:=4.8.32
 PKG_RELEASE:=1
-PKG_MAINTAINER:=Dirk Brenken <dev@brenken.org>
-PKG_LICENSE:=GPL-3.0+
+PKG_MAINTAINER:=
+PKG_LICENSE:=GPL-3.0-or-later
+PKG_CPE_ID:=cpe:/a:midnight_commander:midnight_commander
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=http://ftp.midnight-commander.org/
-PKG_HASH:=8f37e546ac7c31c9c203a03b1c1d6cb2d2f623a300b86badfd367e5559fe148c
+PKG_HASH:=4ddc83d1ede9af2363b3eab987f54b87cf6619324110ce2d3a0e70944d1359fe
 PKG_BUILD_PARALLEL:=1
 PKG_FIXUP:=autoreconf gettext-version
+PKG_BUILD_DEPENDS:=MC_VFS:libtirpc
 
 PKG_CONFIG_DEPENDS := \
 	CONFIG_PACKAGE_MC \
@@ -31,12 +33,12 @@ include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
 
 define Package/mc
-	SECTION:=utils
-	CATEGORY:=Utilities
-	DEPENDS:=+glib2 +libncurses +libmount +MC_VFS:libssh2 $(LIBRPC_DEPENDS) $(ICONV_DEPENDS)
-	TITLE:=Midnight Commander - a powerful visual file manager
-	URL:=https://www.midnight-commander.org/
-	MENU:=1
+  SECTION:=utils
+  CATEGORY:=Utilities
+  DEPENDS:=+glib2 +libncurses +libmount +libe2p +MC_VFS:libssh2 $(ICONV_DEPENDS)
+  TITLE:=Midnight Commander - a powerful visual file manager
+  URL:=https://www.midnight-commander.org/
+  MENU:=1
 endef
 
 define Package/mc/config
@@ -55,9 +57,7 @@ CONFIGURE_ARGS += \
 	--enable-silent-rules \
 	--disable-tests \
 	--disable-doxygen-doc \
-	--with-homedir=/etc/mc \
 	--with-screen=ncurses \
-	--without-gpm-mouse \
 	--without-x \
 
 CONFIGURE_VARS += \
@@ -89,6 +89,8 @@ endif
 
 ifeq ($(CONFIG_MC_VFS),)
 CONFIGURE_ARGS += --disable-vfs
+else
+TARGET_CPPFLAGS += -I$(STAGING_DIR)/usr/include/tirpc
 endif
 
 define Package/mc/install
@@ -96,14 +98,16 @@ define Package/mc/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/mc $(1)/usr/bin
 	$(INSTALL_DIR) $(1)/etc/mc
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/misc/mc.charsets $(1)/etc/mc
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/misc/mc.default.keymap $(1)/etc/mc
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/misc/mc.ext $(1)/etc/mc
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/misc/mc.ext.ini $(1)/etc/mc
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/misc/mc.default.keymap $(1)/etc/mc/mc.keymap
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/misc/filehighlight.ini $(1)/etc/mc
 	$(INSTALL_DIR) $(1)/usr/share/mc/help
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/doc/hlp/mc.hlp $(1)/usr/share/mc/help
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/misc/mc.menu $(1)/etc/mc
 	$(INSTALL_DIR) $(1)/etc/mc/skins
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/misc/skins/default.ini $(1)/etc/mc/skins
-	$(INSTALL_DIR) $(1)/etc/mc/mcedit/Syntax
+	$(INSTALL_DIR) $(1)/usr/share/mc/syntax
+	touch $(1)/usr/share/mc/syntax/Syntax
 ifeq ($(CONFIG_MC_DIFFVIEWER),y)
 	ln -sf mc $(1)/usr/bin/mcdiff
 endif
@@ -111,7 +115,7 @@ ifeq ($(CONFIG_MC_EDITOR),y)
 	ln -sf mc $(1)/usr/bin/mcedit
 endif
 ifeq ($(CONFIG_MC_VFS),y)
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/vfs/extfs/helpers/sfs.ini $(1)/etc/mc
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/vfs/sfs/sfs.ini $(1)/etc/mc
 	$(INSTALL_DIR) $(1)/usr/lib/mc/extfs.d
 endif
 endef
@@ -121,4 +125,23 @@ define Package/mc/conffiles
 /etc/mc/skins/default.ini
 endef
 
+define Package/mc-skins
+  TITLE:=Midnight Commander - a powerful visual file manager - skins
+  URL:=https://www.midnight-commander.org/
+  SECTION:=utils
+  CATEGORY:=Utilities
+  DEPENDS:=+mc
+endef
+
+define Package/mc-skins/install
+	$(INSTALL_DIR) $(1)/etc/mc/skins
+	$(CP) $(PKG_BUILD_DIR)/misc/skins/*.ini $(1)/etc/mc/skins/
+	$(RM) $(1)/etc/mc/skins/default.ini
+endef
+
+define Package/mc-skins/conffiles
+/etc/mc/skins/
+endef
+
 $(eval $(call BuildPackage,mc))
+$(eval $(call BuildPackage,mc-skins))

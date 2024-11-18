@@ -8,16 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=automake
-PKG_VERSION:=1.15
-PKG_RELEASE:=4
+PKG_VERSION:=1.16.5
+PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=@GNU/automake
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_HASH:=9908c75aabd49d13661d6dcb1bc382252d22cc77bf733a2d55e87f2aa2db8636
+PKG_HASH:=f01d58cd6d9d77fbdca9eb4bbd5ead1988228fdb73d6f7a201f5f8d6b118b469
+
 PKG_MAINTAINER:=Heinrich Schuchardt <xypron.glpk@gmx.de>
-PKG_LICENSE:=GPL-3.0+
+PKG_LICENSE:=GPL-2.0-or-later
+PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:gnu:automake
 
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -36,22 +40,24 @@ endef
 
 FIX_PATHS = $(SED) '1c \#!/usr/bin/perl' -e 's| /[^ ]*/bin/perl| /usr/bin/perl|g'
 
+AM_VERSION:=$(word 1,$(subst ., ,$(PKG_VERSION))).$(word 2,$(subst ., ,$(PKG_VERSION)))
+
 define Package/automake/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/automake-$(PKG_VERSION) \
-	  $(1)/usr/bin/automake-$(PKG_VERSION)
-	$(LN) automake-$(PKG_VERSION) $(1)/usr/bin/automake
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/aclocal-$(PKG_VERSION) \
-	  $(1)/usr/bin/aclocal-$(PKG_VERSION)
-	$(LN) aclocal-$(PKG_VERSION) $(1)/usr/bin/aclocal
-	$(FIX_PATHS) $(1)/usr/bin/automake-$(PKG_VERSION)
-	$(FIX_PATHS) $(1)/usr/bin/aclocal-$(PKG_VERSION)
-	$(INSTALL_DIR) $(1)/usr/share/automake-$(PKG_VERSION)
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/automake-$(AM_VERSION) \
+	  $(1)/usr/bin/automake-$(AM_VERSION)
+	$(LN) automake-$(AM_VERSION) $(1)/usr/bin/automake
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/aclocal-$(AM_VERSION) \
+	  $(1)/usr/bin/aclocal-$(AM_VERSION)
+	$(LN) aclocal-$(AM_VERSION) $(1)/usr/bin/aclocal
+	$(FIX_PATHS) $(1)/usr/bin/automake-$(AM_VERSION)
+	$(FIX_PATHS) $(1)/usr/bin/aclocal-$(AM_VERSION)
+	$(INSTALL_DIR) $(1)/usr/share/automake-$(AM_VERSION)
 
 	for dir in \
-	  automake-$(PKG_VERSION) automake-$(PKG_VERSION)/Automake \
-	  automake-$(PKG_VERSION)/am aclocal \
-	  aclocal-$(PKG_VERSION) aclocal-$(PKG_VERSION)/internal \
+	  automake-$(AM_VERSION) automake-$(AM_VERSION)/Automake \
+	  automake-$(AM_VERSION)/am aclocal \
+	  aclocal-$(AM_VERSION) aclocal-$(AM_VERSION)/internal \
 	; do \
 		$(INSTALL_DIR) $(1)/usr/share/$$$$dir; \
 		for file in $$$$(cd $(PKG_INSTALL_DIR) && \

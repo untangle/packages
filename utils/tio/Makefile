@@ -8,26 +8,27 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=tio
-PKG_VERSION:=1.30
+PKG_VERSION:=2.7
 PKG_RELEASE:=1
-PKG_MAINTAINER:=
-PKG_LICENSE:=GPL-2.0+
-PKG_LICENSE_FILES:=COPYING
 
-PKG_SOURCE_URL:=https://github.com/$(PKG_NAME)/$(PKG_NAME)/releases/download/v$(PKG_VERSION)/
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_HASH:=5c86c392a7783c9a3963421087c4a3fd8a32d5d5c705d2ce979bcf011659ac9d
+PKG_SOURCE_URL:=https://github.com/tio/tio/releases/download/v$(PKG_VERSION)
+PKG_HASH:=bf8fe434848c2c1b6540af0b42503c986068176ddc1a988cf02e521e7de5daa5
 
-PKG_FIXUP:=autoreconf
+PKG_MAINTAINER:=
+PKG_LICENSE:=GPL-2.0-or-later
+PKG_LICENSE_FILES:=LICENSE
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/meson.mk
 
 define Package/tio
   SECTION:=utils
   CATEGORY:=Utilities
+  SUBMENU:=Terminal
   TITLE:=A simple TTY terminal I/O application
   URL:=https://tio.github.io/
-  SUBMENU:=Terminal
+  DEPENDS:=+libinih
 endef
 
 define Package/tio/description
@@ -36,7 +37,7 @@ endef
 
 define Package/tio/install
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/tio $(1)/usr/sbin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/tio $(1)/usr/sbin/
 endef
 
 $(eval $(call BuildPackage,tio))

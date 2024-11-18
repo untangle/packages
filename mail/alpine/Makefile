@@ -8,24 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=alpine
-PKG_VERSION:=2.21.999
-PKG_RELEASE:=1
+PKG_VERSION:=2.25
+PKG_RELEASE:=3
 
-PKG_SOURCE_PROTO:=git
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=http://repo.or.cz/alpine.git
-PKG_SOURCE_VERSION:=349642a84039a4b026513c32a3b4f8594acd50df
-PKG_MIRROR_HASH:=8db14c4ae14329a7cffc8ea5099b7fa5c7adf79ca03893b23b1a8c45b847e5af
+PKG_SOURCE_URL:=https://alpineapp.email/alpine/release/src/Old
+PKG_HASH:=658a150982f6740bb4128e6dd81188eaa1212ca0bf689b83c2093bb518ecf776
 
 PKG_MAINTAINER:=Antti Seppälä <a.seppala@gmail.com>
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 
-PKG_FIXUP:=autoreconf
-
 PKG_INSTALL:=1
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
@@ -35,7 +29,7 @@ define Package/alpine/Default
   CATEGORY:=Mail
   DEPENDS:=+libopenssl +libncurses +libpthread +libpam $(ICONV_DEPENDS) $(INTL_DEPENDS)
   TITLE:=Alternatively Licensed Program for Internet News and Email
-  URL:=http://www.washington.edu/alpine
+  URL:=http://alpine.x10host.com/alpine/
 endef
 
 define Package/alpine/Default/description
@@ -60,6 +54,7 @@ endef
 define Package/alpine-nossl
 $(call Package/alpine/Default)
   TITLE+= (without OpenSSL support)
+  DEPENDS+= @BROKEN
   VARIANT:=nossl
 endef
 
@@ -81,6 +76,7 @@ CONFIGURE_ARGS += \
 	--disable-debug \
 	--disable-mouse \
 	--with-c-client-target=slx \
+	$(if $(CONFIG_IPV6),--with,--without)-ipv6
 
 CONFIGURE_VARS += \
 	top_builddir=$(PKG_BUILD_DIR)
@@ -89,21 +85,9 @@ ifeq ($(BUILD_VARIANT),ssl)
 	CONFIGURE_ARGS += \
 		--with-ssl-include-dir=$(STAGING_DIR)/usr/include/openssl/. \
 		--with-ssl-lib-dir=$(STAGING_DIR)/usr/lib
-endif
-
-ifeq ($(BUILD_VARIANT),nossl)
+else
 	CONFIGURE_ARGS += \
 		--without-ssl
-endif
-
-ifeq ($(CONFIG_BUILD_NLS),y)
-  DISABLE_NLS:=
-endif
-
-ifeq ($(CONFIG_IPV6),y)
-  DISABLE_IPV6:=
-else
-  DISABLE_IPV6:=--without-ipv6
 endif
 
 define Build/Compile
@@ -118,7 +102,7 @@ endef
 
 define Package/alpine/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/$(PKG_NAME) $(1)/usr/bin/$(PKG_NAME)
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/alpine $(1)/usr/bin/
 endef
 
 Package/alpine-nossl/install = $(Package/alpine/install)

@@ -9,22 +9,22 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ola
-PKG_VERSION:=0.10.5
-PKG_RELEASE:=2
+PKG_VERSION:=0.10.9
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/OpenLightingProject/ola.git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=32db3c49d435398d017c6b5c0b25e02a7a831f5c
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_HASH:=11ed6540bd667c1662d91de93a260a9a63a98725851f768647e2b9b2efe1ae34
-PKG_LICENSE:=LGPL-2.1+
+PKG_SOURCE_VERSION:=$(PKG_VERSION)
+PKG_SOURCE_URL:=https://github.com/OpenLightingProject/ola
+PKG_MIRROR_HASH:=55b9c82dec4133c3895a9af99a3245764ece14fc5b0a4e0841686903b1d6f365
 
-PKG_FIXUP:=libtool
+PKG_MAINTAINER:=Christian Beier <dontmind@freeshell.org>
+PKG_LICENSE:=LGPL-2.1-or-later
+PKG_LICENSE_FILES:=COPYING
+
+PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
-
 PKG_BUILD_PARALLEL:=1
-PKG_USE_MIPS16:=0
+PKG_BUILD_FLAGS:=no-mips16
 
 HOST_BUILD_DEPENDS:=protobuf/host
 PKG_BUILD_DEPENDS:=ola/host
@@ -37,8 +37,7 @@ define Package/ola
   CATEGORY:=Network
   TITLE:=Open Lighting Architecture Daemon
   URL:=https://www.openlighting.org/
-  MAINTAINER:=Christian Beier <dontmind@freeshell.org>
-  DEPENDS:=+protobuf +libusb-1.0 +libuuid +libstdcpp +libpthread +librt +zlib +libncurses +liblo
+  DEPENDS:=+protobuf +libftdi1 +libusb-1.0 +libuuid +libstdcpp +libpthread +librt +zlib +libncurses +liblo +libmicrohttpd
 endef
 
 define Package/ola/description
@@ -52,22 +51,20 @@ CONFIGURE_ARGS += \
 	--disable-static \
 	--disable-fatal-warnings \
 	--disable-unittests \
-	--disable-http \
 	--without-dns-sd \
-	 --with-ola-protoc-plugin=$(HOST_BUILD_DIR)/protoc/ola_protoc_plugin
+	--with-ola-protoc-plugin="$(STAGING_DIR_HOSTPKG)/bin/ola_protoc_plugin"
 
 HOST_CONFIGURE_ARGS += \
 	--disable-all-plugins \
-	--disable-slp \
 	--disable-osc \
 	--disable-uart \
 	--disable-libusb \
-	--disable-libftdi \
 	--disable-http  \
 	--disable-examples \
 	--disable-unittests \
 	--disable-doxygen-html \
-	--disable-doxygen-doc
+	--disable-doxygen-doc \
+	--with-protoc=$(STAGING_DIR_HOSTPKG)/bin/protoc
 
 # only build the ola_protoc thingy
 define Host/Compile
@@ -75,8 +72,9 @@ define Host/Compile
 		$(MAKE) protoc/ola_protoc_plugin
 endef
 
-# nothing to install for host part
 define Host/Install
+	$(INSTALL_DIR) $(STAGING_DIR_HOSTPKG)/bin
+	$(CP) $(HOST_BUILD_DIR)/protoc/ola_protoc_plugin $(STAGING_DIR_HOSTPKG)/bin
 endef
 
 
@@ -101,6 +99,9 @@ define Package/ola/install
 
 	$(INSTALL_DIR) $(1)/usr/share/ola/pids
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/ola/pids/* $(1)/usr/share/ola/pids
+
+	$(INSTALL_DIR) $(1)/usr/share/olad/www
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/olad/www/* $(1)/usr/share/olad/www
 endef
 
 define Package/ola/postinst

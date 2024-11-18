@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014-2017 OpenWrt.org
+# Copyright (C) 2018 Jianhui Zhao
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,75 +8,57 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libuhttpd
-PKG_VERSION:=2.0.3
+PKG_VERSION:=3.14.2
 PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=v$(PKG_VERSION)
-PKG_SOURCE_URL=https://github.com/zhaojh329/libuhttpd.git
-PKG_MIRROR_HASH:=f20e4081ba1bbea277a3c86f28fa451d54546817a58814fff91470550a5b8e5d
-CMAKE_INSTALL:=1
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL=https://github.com/zhaojh329/libuhttpd/releases/download/v$(PKG_VERSION)
+PKG_HASH:=ce2abbc599a922c4bac12f1cdf3e9c9740f387f819a54ca01e9fed60905baa40
 
-PKG_BUILD_DIR=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_SOURCE_SUBDIR)
-
-PKG_LICENSE:=LGPL-2.1
+PKG_MAINTAINER:=Jianhui Zhao <zhaojh329@gmail.com>
+PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
 
-PKG_MAINTAINER:=Jianhui Zhao <jianhuizhao329@gmail.com>
+CMAKE_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
 
-define Package/libuhttpd/default
+define Package/libuhttpd/Default
   SECTION:=libs
   CATEGORY:=Libraries
   SUBMENU:=Networking
-  TITLE:=libuhttpd
-  DEPENDS:=+libubox +liblua
+  TITLE:=A lightweight HTTP server library based on libev
+  URL:=https://github.com/zhaojh329/libuhttpd
+  DEPENDS:=+libev $(2)
+  VARIANT:=$(1)
+  PROVIDES:=libuhttpd
 endef
 
-define Package/libuhttpd-nossl
-  $(Package/libuhttpd/default)
-  TITLE += (NO SSL)
-  VARIANT:=nossl
-endef
+Package/libuhttpd-openssl=$(call Package/libuhttpd/Default,openssl,+PACKAGE_libuhttpd-openssl:libopenssl)
+Package/libuhttpd-wolfssl=$(call Package/libuhttpd/Default,wolfssl,+PACKAGE_libuhttpd-wolfssl:libwolfssl)
+Package/libuhttpd-mbedtls=$(call Package/libuhttpd/Default,mbedtls,+PACKAGE_libuhttpd-mbedtls:libmbedtls +PACKAGE_libuhttpd-mbedtls:zlib)
+Package/libuhttpd-nossl=$(call Package/libuhttpd/Default,nossl)
 
-define Package/libuhttpd-openssl
-  $(Package/libuhttpd/default)
-  TITLE += (openssl)
-  DEPENDS += +libustream-openssl
-  VARIANT:=openssl
-endef
+CMAKE_OPTIONS += -DBUILD_EXAMPLE=OFF
+TARGET_CFLAGS += -Wno-error=deprecated-declarations
 
-define Package/libuhttpd-wolfssl
-  $(Package/libuhttpd/default)
-  TITLE += (wolfssl)
-  DEPENDS += +libustream-wolfssl
-  VARIANT:=wolfssl
-endef
-
-define Package/libuhttpd-mbedtls
-  $(Package/libuhttpd/default)
-  TITLE += (mbedtls)
-  DEPENDS += +libustream-mbedtls
-  VARIANT:=mbedtls
-endef
-
-ifeq ($(BUILD_VARIANT),nossl)
-  CMAKE_OPTIONS += -DUHTTPD_SSL_SUPPORT=off
+ifeq ($(BUILD_VARIANT),openssl)
+  CMAKE_OPTIONS += -DUSE_OPENSSL=ON
+else ifeq ($(BUILD_VARIANT),wolfssl)
+  CMAKE_OPTIONS += -DUSE_WOLFSSL=ON
+else ifeq ($(BUILD_VARIANT),mbedtls)
+  CMAKE_OPTIONS += -DUSE_MBEDTLS=ON
+else
+  CMAKE_OPTIONS += -DSSL_SUPPORT=OFF
 endif
 
-define Package/libuhttpd/default/install
-	$(INSTALL_DIR) $(1)/usr/lib/
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/libuhttpd.so* $(1)/usr/lib/
+define Package/libuhttpd-$(BUILD_VARIANT)/install
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libuhttpd.so* $(1)/usr/lib/
 endef
 
-Package/libuhttpd-nossl/install = $(Package/libuhttpd/default/install)
-Package/libuhttpd-openssl/install = $(Package/libuhttpd/default/install)
-Package/libuhttpd-wolfssl/install = $(Package/libuhttpd/default/install)
-Package/libuhttpd-mbedtls/install = $(Package/libuhttpd/default/install)
-
-$(eval $(call BuildPackage,libuhttpd-nossl))
+$(eval $(call BuildPackage,libuhttpd-openssl))
 $(eval $(call BuildPackage,libuhttpd-mbedtls))
 $(eval $(call BuildPackage,libuhttpd-wolfssl))
-$(eval $(call BuildPackage,libuhttpd-openssl))
+$(eval $(call BuildPackage,libuhttpd-nossl))

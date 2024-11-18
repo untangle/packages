@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=bmx7-dnsupdate
 PKG_VERSION:=0.1
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -12,6 +12,7 @@ define Package/bmx7-dnsupdate
   TITLE:=bmx7-dnsupdate
   MAINTAINER:=Paul Spooren <spooren@informatik.uni-leipzig.de>
   DEPENDS:=+bmx7 +bmx7-json inotifywait jshn
+  PKGARCH:=all
 endef
 
 define Build/Compile

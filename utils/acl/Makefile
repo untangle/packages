@@ -8,29 +8,26 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=acl
-PKG_REV:=c39f7c5475e3e00d8abeb7b30e61958670fb3ee2
-PKG_VERSION:=20180121
-PKG_RELEASE:=1
+PKG_VERSION:=2.3.2
+PKG_RELEASE:=2
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_MIRROR_HASH:=0291d931bbac041f14bc12d317e505cd596e0ec6f1b8bcdfa03b9a1fad274ac2
-PKG_SOURCE_URL:=https://git.savannah.gnu.org/git/acl.git
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=$(PKG_REV)
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=@SAVANNAH/acl
+PKG_HASH:=97203a72cae99ab89a067fe2210c1cbf052bc492b479eca7d226d9830883b0bd
+
 PKG_MAINTAINER:=Maxim Storchak <m.storchak@gmail.com>
-
 PKG_LICENSE:=LGPL-2.1 GPL-2.0
 PKG_LICENSE_FILES:=doc/COPYING doc/COPYING.LGPL
+PKG_CPE_ID:=cpe:/a:acl_project:acl
 
 PKG_INSTALL:=1
-PKG_FIXUP:=autoreconf
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/acl/Default
   TITLE:=Access control list (ACL) manipulation
-  URL:=http://savannah.nongnu.org/projects/acl
+  URL:=https://savannah.nongnu.org/projects/acl
   SUBMENU:=Filesystem
 endef
 

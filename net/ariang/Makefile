@@ -1,17 +1,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ariang
+PKG_VERSION:=1.3.7
 PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/mayswind/AriaNg-DailyBuild
-PKG_SOURCE_DATE:=2018-05-21
-PKG_SOURCE_VERSION:=304500c3f042ac5387e4dd5d6ea159999d249314
-PKG_MIRROR_HASH:=f5bb5aad024f0916becc8d36832e5d864cd078553c5a719c715a00ecc72af90e
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).zip
+PKG_SOURCE_URL:=https://github.com/mayswind/AriaNg/releases/download/$(PKG_VERSION)
+PKG_HASH:=60023dce3e02d4811b76cfdccf5953fe616006bceff90b5291872be8239dcedf
+UNPACK_CMD=unzip -q -d $(1) $(DL_DIR)/$(PKG_SOURCE)
 
+PKG_MAINTAINER:=Ansuel Smith <ansuelsmth@gmail.com>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=Ansuel Smith <ansuelsmth@gmail.com>
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -21,7 +21,7 @@ define Package/ariang/default
   SUBMENU:=Download Manager
   DEPENDS:=+aria2
   TITLE:=AriaNg webui
-  URL:=https://github.com/mayswind/AriaNg
+  URL:=https://ariang.mayswind.net
   PKGARCH:=all
 endef
 
@@ -53,13 +53,21 @@ define Package/ariang/install
 	$(CP) \
 		$(PKG_BUILD_DIR)/{langs,css,js,fonts} \
 		$(PKG_BUILD_DIR)/index.html \
-		$(PKG_BUILD_DIR)/index.manifest \
 		$(PKG_BUILD_DIR)/LICENSE \
-		$(PKG_BUILD_DIR)/favicon.ico \
+		$(PKG_BUILD_DIR)/favicon.* \
+		$(PKG_BUILD_DIR)/robots.txt \
+		$(PKG_BUILD_DIR)/tileicon.png \
+		$(PKG_BUILD_DIR)/touchicon.png \
 		$(1)/www/ariang
 endef
 
-Package/ariang-nginx/install = $(Package/ariang/install)
+define Package/ariang-nginx/install
+	$(Package/ariang/install)
+	$(INSTALL_DIR) $(1)/etc/nginx/conf.d/
+	$(INSTALL_BIN) ./files/ariang.locations $(1)/etc/nginx/conf.d/
+	$(INSTALL_DIR) $(1)/etc/uci-defaults
+	$(INSTALL_BIN) ./files/80_ariang-nginx-support $(1)/etc/uci-defaults/80_ariang-nginx-support
+endef
 
 $(eval $(call BuildPackage,ariang))
 $(eval $(call BuildPackage,ariang-nginx))

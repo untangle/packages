@@ -8,23 +8,27 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dovecot-pigeonhole
-PKG_VERSION_PLUGIN:=0.5.1
+PKG_VERSION_PLUGIN:=0.5.21
 PKG_VERSION_DOVECOT:=$(shell make --no-print-directory -C ../dovecot/ val.PKG_VERSION V=s)
-PKG_VERSION:=$(PKG_VERSION_DOVECOT)-$(PKG_VERSION_PLUGIN)
-PKG_RELEASE:=2
+PKG_VERSION:=$(PKG_VERSION_DOVECOT).$(PKG_VERSION_PLUGIN)
+PKG_RELEASE:=1
 
 DOVECOT_VERSION:=2.3
 
 PKG_SOURCE:=dovecot-$(DOVECOT_VERSION)-pigeonhole-$(PKG_VERSION_PLUGIN).tar.gz
 PKG_SOURCE_URL:=https://pigeonhole.dovecot.org/releases/$(DOVECOT_VERSION)
-PKG_HASH:=e3b0aa59261881bcb0d33a6c398f3cb5f9f75e077e67bae175cf33c362577547
-PKG_LICENSE:=LGPL-2.1
+PKG_HASH:=1ca71d2659076712058a72030288f150b2b076b0306453471c5261498d3ded27
+
+PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
+PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING COPYING.LGPL
+PKG_CPE_ID:=cpe:/a:dovecot:pigeonhole
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/dovecot-$(DOVECOT_VERSION)-pigeonhole-$(PKG_VERSION_PLUGIN)
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
 define Package/dovecot-pigeonhole
   SECTION:=mail
@@ -32,8 +36,7 @@ define Package/dovecot-pigeonhole
   DEPENDS:=+dovecot
   EXTRA_DEPENDS:=dovecot (>= $(PKG_VERSION_DOVECOT))
   TITLE:=Mail filtering facilities for Dovecot
-  MAINTAINER:=W. Michael Petullo <mike@flyn.org>
-  URL:=https://wiki2.dovecot.org/Pigeonhole
+  URL:=https://pigeonhole.dovecot.org/
 endef
 
 define Package/dovecot-pigeonhole/description
@@ -49,9 +52,10 @@ CONFIGURE_VARS += \
   CPPFLAGS="$(TARGET_CPPFLAGS) -I$(STAGING_DIR)/usr/include/dovecot/"
 
 define Package/dovecot-pigeonhole/install
-	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/lib/dovecot/
+	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/lib/dovecot/ $(1)/usr/libexec/dovecot/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/* $(1)/usr/bin/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/dovecot/* $(1)/usr/lib/dovecot/
+	$(CP) $(PKG_INSTALL_DIR)/usr/libexec/dovecot/* $(1)/usr/libexec/dovecot/
 	find $(1)/usr/lib/dovecot/ -name "*.a" -o -name "*.la" | xargs rm
 endef
 

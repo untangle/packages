@@ -8,87 +8,88 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libmicrohttpd
-PKG_VERSION:=0.9.59
+PKG_VERSION:=1.0.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@GNU/libmicrohttpd
-PKG_HASH:=9b9ccd7d0b11b0e179f1f58dc2caa3e0c62c8609e1e1dc7dcaadf941b67d923c
+PKG_HASH:=a89e09fc9b4de34dde19f4fcb4faaa1ce10299b9908db1132bbfa1de47882b94
 
 PKG_MAINTAINER:=Alexander Couzens <lynxis@fe80.eu>
-
-PKG_LICENSE:=LGPL-2.1
+PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
-PKG_BUILD_PARALLEL:=1
+PKG_CPE_ID:=cpe:/a:gnu:libmicrohttpd
 
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/libmicrohttpd/Default
-   SECTION:=libs
-   CATEGORY:=Libraries
-   TITLE:=GNU libmicrohttpd is a library that runs an HTTP server.
-   URL:=http://www.gnu.org/software/libmicrohttpd/
-endef
-
-define Package/libmicrohttpd
-$(call Package/libmicrohttpd/Default)
-   TITLE+=(with-ssl)
-   DEPENDS:=+libpthread +libgcrypt +libgnutls +libgpg-error
+define Package/libmicrohttpd/default
+  SECTION:=libs
+  CATEGORY:=Libraries
+  URL:=https://www.gnu.org/software/libmicrohttpd/
 endef
 
 define Package/libmicrohttpd-no-ssl
-$(call Package/libmicrohttpd/Default)
-   TITLE+=(no-ssl)
-   DEPENDS:=+libpthread
-   VARIANT:=no-ssl
-   CONFLICTS:=libmicrohttpd
+$(call Package/libmicrohttpd/default)
+  TITLE:=GNU libmicrohttpd is an embbeded HTTP server library
+  VARIANT:=nossl
+  DEFAULT_VARIANT:=1
+  PROVIDES:=libmicrohttpd
 endef
 
-define Package/libmicrohttpd/description/Default
-	GNU libmicrohttpd is a small C library that is supposed to make it easy
-	to run an HTTP server as part of another application.
+define Package/libmicrohttpd-ssl
+$(call Package/libmicrohttpd/default)
+  TITLE:=GNU libmicrohttpd is an embbeded HTTP and HTTPS server library
+  VARIANT:=ssl
+  DEPENDS:=+libgnutls
+  PROVIDES:=libmicrohttpd
 endef
 
-define Package/libmicrohttpd-no-ssl/description
-$(call Package/libmicrohttp/description/Default)
+define Package/libmicrohttpd/description
+  GNU libmicrohttpd is a small C library that is supposed to make it easy
+  to run an HTTP server as part of another application.
 endef
 
-CONFIGURE_ARGS+= \
+CONFIGURE_ARGS += \
 	--disable-curl \
-	--disable-spdy \
-	--without-openssl
+	--disable-rpath \
+	--disable-doc \
+	--disable-examples \
+	--enable-epoll \
+	--with-pic
 
-ifeq ($(BUILD_VARIANT),no-ssl)
+ifeq ($(BUILD_VARIANT),ssl)
+CONFIGURE_ARGS += \
+	--enable-https \
+	--with-gnutls \
+	--enable-md5=tlslib \
+	--enable-sha256=tlslib
+else
 CONFIGURE_ARGS += \
 	--disable-https \
 	--without-gnutls
-else
-CONFIGURE_ARGS += \
-	--enable-https \
-	--with-gnutls
 endif
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/include/microhttpd.h $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.{so*,a,la} $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libmicrohttpd.{so*,a,la} $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig/
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/* $(1)/usr/lib/pkgconfig/
-endef
-
-define Package/libmicrohttpd/install
-	$(INSTALL_DIR) $(1)/usr/lib/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.so* $(1)/usr/lib/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libmicrohttpd.pc $(1)/usr/lib/pkgconfig/
 endef
 
 define Package/libmicrohttpd-no-ssl/install
-$(call Package/libmicrohttpd/install,$1)
+	$(INSTALL_DIR) $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libmicrohttpd.so* $(1)/usr/lib/
 endef
 
-$(eval $(call BuildPackage,libmicrohttpd))
+define Package/libmicrohttpd-ssl/install
+	$(INSTALL_DIR) $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libmicrohttpd.so* $(1)/usr/lib/
+endef
+
 $(eval $(call BuildPackage,libmicrohttpd-no-ssl))
+$(eval $(call BuildPackage,libmicrohttpd-ssl))

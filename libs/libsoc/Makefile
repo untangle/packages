@@ -8,10 +8,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libsoc
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/jackmitch/libsoc.git
+PKG_MIRROR_HASH:=6aefbd76922fd6b606b9fcbda555dfe079f3afe445a6180d8be0fbb8fd27f424
 PKG_SOURCE_DATE:=2016-12-22
 PKG_SOURCE_VERSION:=5b788d4d558a78c52e6cfe97325e4564b307a3a0
 
@@ -42,11 +43,6 @@ CONFIGURE_ARGS += \
 	--enable-shared \
 	--enable-static \
 	--disable-cxx
-
-MAKE_FLAGS += \
-	CFLAGS="$(TARGET_CFLAGS)" \
-	DESTDIR="$(PKG_INSTALL_DIR)" \
-	all install
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include

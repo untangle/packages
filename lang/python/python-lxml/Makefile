@@ -8,87 +8,41 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-lxml
-PKG_VERSION:=4.2.1
+PKG_VERSION:=5.2.2
 PKG_RELEASE:=1
 
-PKG_SOURCE:=lxml-$(PKG_VERSION).tgz
-PKG_SOURCE_URL:=http://lxml.de/files/
-PKG_HASH:=e2629cdbcad82b83922a3488937632a4983ecc0fed3e5cfbf430d069382eeb9b
+PYPI_NAME:=lxml
+PKG_HASH:=bb2dc4898180bea79863d5487e5f9c7c34297414bad54bcd0f0852aee9cfdb87
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-lxml-$(PKG_VERSION)
-PKG_UNPACK=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
-
-PKG_LICENSE:=BSD
+PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSES.txt
 PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
+PKG_CPE_ID:=cpe:/a:lxml:lxml
 
+PKG_BUILD_DEPENDS:=python-cython/host
+
+include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
-include ../python-package.mk
 include ../python3-package.mk
 
-define Package/python-lxml/Default
+define Package/python3-lxml
   SECTION:=lang
   CATEGORY:=Languages
   SUBMENU:=Python
-  URL:=http://lxml.de
-  DEPENDS:=+libxml2 +libxslt +libexslt
-endef
-
-define Package/python-lxml
-$(call Package/python-lxml/Default)
-  TITLE:=python-lxml
-  DEPENDS+=+PACKAGE_python-lxml:python-light +PACKAGE_python-lxml:python-codecs
-  VARIANT:=python
-endef
-
-define Package/python3-lxml
-$(call Package/python-lxml/Default)
-  TITLE:=python3-lxml
-  DEPENDS+=+PACKAGE_python3-lxml:python3-light
-  VARIANT:=python3
-endef
-
-define Package/python-lxml/description
-The lxml XML toolkit is a Pythonic binding
-for the C libraries libxml2 and libxslt.
+  TITLE:=Pythonic XML processing library
+  URL:=https://lxml.de
+  DEPENDS:=+libxml2 +libxslt +libexslt +python3-light
 endef
 
 define Package/python3-lxml/description
-$(call Package/python-lxml/description)
-.
-(Variant for Python3)
+  lxml is a Pythonic, mature binding for the libxml2 and libxslt
+  libraries. It provides safe and convenient access to these libraries
+  using the ElementTree API.
+
+  It extends the ElementTree API significantly to offer support for
+  XPath, RelaxNG, XML Schema, XSLT, C14N and much more.
 endef
-
-TARGET_LDFLAGS += -lxml2 -lxslt -lexslt
-
-define PyBuild/Compile
-	$(call Build/Compile/PyMod,, \
-		install --prefix="/usr" --root="$(PKG_INSTALL_DIR)" \
-		--static \
-		--single-version-externally-managed \
-		, \
-		INCLUDE="$(STAGING_DIR)/usr/include/ $(STAGING_DIR)/usr/include/libxml2" \
-		LIBRARY="$(STAGING_DIR)/usr/lib $(STAGING_DIR)/lib" \
-		CFLAGS="$(TARGET_CFLAGS)" \
-		LDFLAGS="$(TARGET_LDFLAGS)" \
-	)
-endef
-
-define Py3Build/Compile
-	$(call Build/Compile/Py3Mod,, \
-		install --prefix="/usr" --root="$(PKG_INSTALL_DIR)" \
-		--static \
-		--single-version-externally-managed \
-		, \
-		INCLUDE="$(STAGING_DIR)/usr/include/ $(STAGING_DIR)/usr/include/libxml2" \
-		LIBRARY="$(STAGING_DIR)/usr/lib $(STAGING_DIR)/lib" \
-		CFLAGS="$(TARGET_CFLAGS)" \
-		LDFLAGS="$(TARGET_LDFLAGS)" \
-	)
-endef
-
-$(eval $(call PyPackage,python-lxml))
-$(eval $(call BuildPackage,python-lxml))
 
 $(eval $(call Py3Package,python3-lxml))
 $(eval $(call BuildPackage,python3-lxml))
+$(eval $(call BuildPackage,python3-lxml-src))

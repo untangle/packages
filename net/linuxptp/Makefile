@@ -8,26 +8,27 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=linuxptp
-PKG_VERSION:=1.9.2
+PKG_VERSION:=4.4
 PKG_RELEASE:=1
 
-PKG_MAINTAINER:=Wojciech Dubowik <Wojciech.Dubowik@neratec.com>
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tgz
-PKG_SOURCE_URL:=@SF/$(PKG_NAME)/v$(PKG_VERSION)
-PKG_HASH:=7f662e65c66c37ff211dc525476626875c2b74162ded05c8a25d036fb963b8d0
+PKG_SOURCE_URL:=https://downloads.nwtime.org/linuxptp/
+PKG_HASH:=61757bc0a58d789b8fcbdddf56c88a0230597184a70dcb2ac05b4c6b619f7d5c
 
-PKG_LICENSE:=GPL-2.0
+PKG_MAINTAINER:=Wojciech Dubowik <Wojciech.Dubowik@westermo.com>
+PKG_LICENSE:=GPL-2.0-only
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:linuxptp_project:linuxptp
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/kernel.mk
 
 define Package/linuxptp
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=Time Synchronization
   TITLE:=Linux Precision Time Protocol (PTP) daemon
-  URL:=http://linuxptp.sourceforge.net/
-  DEPENDS:=@!USE_UCLIBC +librt
+  URL:=https://linuxptp.nwtime.org/
 endef
 
 define Package/linuxptp/description
@@ -40,7 +41,9 @@ endef
 EXTRA_CFLAGS += -DHAVE_CLOCK_ADJTIME -DHAVE_POSIX_SPAWN -DHAVE_ONESTEP_SYNC
 
 MAKE_VARS += \
-	EXTRA_CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS) $(EXTRA_CFLAGS)"
+	EXTRA_CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS) $(EXTRA_CFLAGS)" \
+	KBUILD_OUTPUT="$(LINUX_DIR)" \
+	NO_AUTODETECT_SAD_MAC_LIB="y"
 
 define Package/linuxptp/install
 	$(INSTALL_DIR) $(1)/usr/sbin

@@ -8,19 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cyrus-sasl
-PKG_VERSION_BASE:=2.1.27
-PKG_VERSION:=$(PKG_VERSION_BASE)-rc7
-PKG_RELEASE:=1
+PKG_VERSION:=2.1.28
+PKG_RELEASE:=3
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://www.cyrusimap.org/releases/
-PKG_HASH:=c1846b80e80286c94941a1e27974bba759b171ccad25d5b49bd8d9deab10f54b
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION_BASE)
+PKG_SOURCE_URL:=https://github.com/cyrusimap/cyrus-sasl/releases/download/cyrus-sasl-2.1.28/
+PKG_HASH:=7ccfc6abd01ed67c1a0924b353e526f1b766b21f42d4562ee635a8ebfc5bb38c
 
 PKG_LICENSE:=BSD-4c BSD
 PKG_LICENSE_FILES:=COPYING cmulocal/COPYING saslauthd/COPYING
+PKG_CPE_ID:=cpe:/a:cmu:cyrus-sasl
 
 PKG_FIXUP:=autoreconf
 PKG_MACRO_PATHS:=cmulocal config ../cmulocal ../config
@@ -29,12 +28,29 @@ PKG_REMOVE_FILES:=aclocal.m4 saslauthd/aclocal.m4 config/libtool.m4
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/libsasl2
+define Package/libsasl2/Default
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=A general purpose authentication library
   URL:=http://asg.web.cmu.edu/sasl/
+endef
+
+define Package/libsasl2
+  $(call Package/libsasl2/Default)
   DEPENDS:=+libopenssl
+  TITLE+= (libraries)
+endef
+
+define Package/libsasl2-sasldb
+  $(call Package/libsasl2/Default)
+  DEPENDS:=+libsasl2 +libdb47
+  TITLE+= (sasldb libraries)
+endef
+
+define Package/libsasl2-utils
+  $(call Package/libsasl2/Default)
+  DEPENDS:=+libsasl2 +libdb47
+  TITLE+= (sasldb utilities)
 endef
 
 TARGET_CFLAGS += $(FPIC)
@@ -48,7 +64,7 @@ CONFIGURE_ARGS += \
 	--disable-checkapop \
 	--enable-cram \
 	--enable-digest \
-	--without-auth-sasldb \
+	--enable-auth-sasldb \
 	--disable-otp \
 	--disable-srp \
 	--disable-srp-setpass \
@@ -61,7 +77,7 @@ CONFIGURE_ARGS += \
 	--disable-ntlm \
 	--disable-sql \
 	--disable-ldapdb \
-	--without-dblib \
+	--with-dblib=berkeley \
 	--without-gdbm \
 	--with-devrandom="/dev/urandom" \
 	--without-pam \
@@ -102,13 +118,31 @@ define Build/InstallDev
 	ln -sf libsasl2.so $(1)/usr/lib/libsasl.so
 	$(INSTALL_DIR) $(1)/usr/lib/sasl2
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/sasl2/lib*.{a,so*} $(1)/usr/lib/sasl2/
+	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libsasl2.pc $(1)/usr/lib/pkgconfig/
 endef
 
 define Package/libsasl2/install
 	$(INSTALL_DIR) $(1)/usr/lib/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libsasl2.so* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libsasl2.so.* $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/lib/sasl2
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/sasl2/lib*.so* $(1)/usr/lib/sasl2/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/sasl2/libanonymous.so* $(1)/usr/lib/sasl2/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/sasl2/libplain.so* $(1)/usr/lib/sasl2/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/sasl2/libcrammd5.so* $(1)/usr/lib/sasl2/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/sasl2/libdigestmd5.so* $(1)/usr/lib/sasl2/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/sasl2/libscram.so* $(1)/usr/lib/sasl2/
+endef
+
+define Package/libsasl2-sasldb/install
+	$(INSTALL_DIR) $(1)/usr/lib/sasl2
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/sasl2/libsasldb.so* $(1)/usr/lib/sasl2/
+endef
+
+define Package/libsasl2-utils/install
+	$(INSTALL_DIR) $(1)/usr/sbin/
+	$(CP) $(PKG_INSTALL_DIR)/usr/sbin/{pluginviewer,sasldblistusers2,saslpasswd2} $(1)/usr/sbin/
 endef
 
 $(eval $(call BuildPackage,libsasl2))
+$(eval $(call BuildPackage,libsasl2-sasldb))
+$(eval $(call BuildPackage,libsasl2-utils))

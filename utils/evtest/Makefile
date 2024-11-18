@@ -8,30 +8,30 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=evtest
-PKG_REV:=ab140a2dab1547f7deb5233be6d94a388cf08b26
-PKG_VERSION:=1.33
+PKG_VERSION:=1.35
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_MIRROR_HASH:=9716be17dadc496f15861e41e17980be9d444de856bc2e5b9a732f9ce826b8dd
-PKG_SOURCE_URL:=git://anongit.freedesktop.org/evtest
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=$(PKG_REV)
+PKG_SOURCE_VERSION:=$(PKG_NAME)-$(PKG_VERSION)
+PKG_SOURCE_URL:=https://gitlab.freedesktop.org/libevdev/evtest
+PKG_MIRROR_HASH:=4298a31fe197f89eb980d469e3dc34022485d7d8220ad12debc8ab8e80cdc9a6
 
 PKG_MAINTAINER:=Pushpal Sidhu <psidhu.devel@gmail.com>
-PKG_LICENSE:=GPL-2.0
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 
 PKG_FIXUP:=autoreconf
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/autotools.mk
+
+CONFIGURE_VARS += ac_cv_path_ASCIIDOC="" ac_cv_path_XMLTO=""
 
 define Package/evtest
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Event Test Program
+  URL:=https://gitlab.freedesktop.org/libevdev/evtest
 endef
 
 define Package/evtest/description

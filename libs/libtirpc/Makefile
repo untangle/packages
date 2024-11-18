@@ -1,27 +1,23 @@
-# 
-# Copyright (C) 2006-2018 OpenWrt.org
-#
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
-
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libtirpc
-PKG_VERSION:=1.0.3
+PKG_VERSION:=1.3.4
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=@SF/libtirpc
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_HASH:=86c3a78fc1bddefa96111dd233124c703b22a78884203c55c3e06b3be6a0fd5e
+PKG_HASH:=1e0b0c7231c5fa122e06c0609a76723664d068b0dba3b8219b63e6340b347860
 
-PKG_MAINTAINER:=Andy Walsh <andy.walsh44+github@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
+PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:libtirpc_project:libtirpc
 
-PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+HOST_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/host-build.mk
 
 define Package/libtirpc
   SECTION:=libs
@@ -32,18 +28,20 @@ define Package/libtirpc
 endef
 
 CONFIGURE_ARGS += --disable-gssapi
-# Info from Buildroot Makefile
-# getrpcby{number,name} are only provided if 'GQ' is defined
-TARGET_CFLAGS += -DGQ
-#CONFIGURE_VARS += \
-#	GSSGLUE_LIBS="-lkrb5 -lk5crypto -l:libcom_err.so.3 -lkeyutils -lresolv -gssapi_krb5" \
-#	GSSGLUE_CFLAGS=-I$(STAGING_DIR)/usr/include/krb5/
+HOST_CONFIGURE_ARGS += --disable-gssapi --disable-shared
 
-#EXTRA_LDFLAGS := -lgssapi_krb5
+ifeq ($(HOST_OS),Darwin)
+HOST_CONFIGURE_ARGS += --disable-symvers
+endif
+
+TARGET_CFLAGS += -DGQ
+HOST_CFLAGS += -DGQ
 
 define Package/libtirpc/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libtirpc.so* $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libtirpc.so* $(1)/usr/lib/
+	$(INSTALL_DIR) $(1)/etc
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/etc/netconfig $(1)/etc/
 endef
 
 define Build/InstallDev
@@ -52,8 +50,8 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libtirpc.{a,so*} $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include
-	$(SED) 's,/usr,${STAGING_DIR}/usr,g' $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libtirpc.pc
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libtirpc.pc $(1)/usr/lib/pkgconfig/libtirpc.pc
 endef
 
+$(eval $(call HostBuild))
 $(eval $(call BuildPackage,libtirpc))

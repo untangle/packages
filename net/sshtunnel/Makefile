@@ -8,9 +8,9 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sshtunnel
-PKG_VERSION:=4
-PKG_RELEASE:=1
-PKG_LICENSE:=GPL-2.0+
+PKG_VERSION:=5
+PKG_RELEASE:=2
+PKG_LICENSE:=GPL-2.0-or-later
 
 PKG_MAINTAINER:=Nuno Goncalves <nunojpg@gmail.com>
 
@@ -20,12 +20,13 @@ define Package/sshtunnel
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=SSH
-  TITLE:=Manages Local and Remote openssh ssh(1) tunnels
-  DEPENDS:=+openssh-client
+  TITLE:=Manages local and remote openssh ssh(1) tunnels
+  DEPENDS:=@(DROPBEAR_DBCLIENT||PACKAGE_openssh-client)
+  PKGARCH:=all
 endef
 
 define Package/sshtunnel/description
-Creates openssh ssh(1) Local and Remote tunnels configured in UCI file. Can be used to allow remote connections, possibly over NATed connections or without public IP/DNS
+Creates openssh ssh(1) local and remote tunnels configured in UCI file. Can be used to allow remote connections, possibly over NATed connections or without public IP/DNS
 endef
 
 define Package/sshtunnel/conffiles
@@ -39,7 +40,7 @@ define Package/sshtunnel/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/sshtunnel.init $(1)/etc/init.d/sshtunnel
 	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_DATA) ./files/uci_sshtunnel $(1)/etc/config/sshtunnel
+	$(INSTALL_CONF) ./files/uci_sshtunnel $(1)/etc/config/sshtunnel
 endef
 
 $(eval $(call BuildPackage,sshtunnel))

@@ -1,7 +1,17 @@
 # This makefile simplifies perl module builds.
 #
 
-PERL_VERSION:=5.26
+ifeq ($(origin PERL_INCLUDE_DIR),undefined)
+  PERL_INCLUDE_DIR:=$(dir $(lastword $(MAKEFILE_LIST)))
+endif
+
+include $(PERL_INCLUDE_DIR)/perlver.mk
+
+ifneq ($(PKG_NAME),perl)
+  PKG_VERSION:=$(PKG_VERSION).$(PERL_VERSION2)
+endif
+
+PERL_VERSION:=$(PERL_VERSION2)
 
 # Build environment
 HOST_PERL_PREFIX:=$(STAGING_DIR_HOSTPKG)/usr
@@ -9,11 +19,14 @@ ifneq ($(CONFIG_USE_GLIBC),)
 	EXTRA_LIBS:=bsd
 	EXTRA_LIBDIRS:=$(STAGING_DIR)/lib
 endif
-PERL_CMD:=$(STAGING_DIR_HOSTPKG)/usr/bin/perl$(PERL_VERSION).0
+PERL_CMD:=$(STAGING_DIR_HOSTPKG)/usr/bin/perl$(PERL_VERSION3)
 
 MOD_CFLAGS_PERL:=-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 $(TARGET_CFLAGS) $(TARGET_CPPFLAGS)
 ifdef CONFIG_PERL_THREADS
 	MOD_CFLAGS_PERL+= -D_REENTRANT -D_GNU_SOURCE
+endif
+ifdef CONFIG_USE_MUSL
+	MOD_CFLAGS_PERL+= -D_LARGEFILE64_SOURCE
 endif
 
 # Module install prefix
@@ -22,39 +35,49 @@ PERL_TESTSDIR:=/usr/share/perl/perl-tests
 PERLBASE_TESTSDIR:=/usr/share/perl/perlbase-tests
 PERLMOD_TESTSDIR:=/usr/share/perl/perlmod-tests
 
+FLOCK:=$(STAGING_DIR_HOST)/bin/flock
+
 define perlmod/host/relink
 	rm -f $(1)/Makefile.aperl
-	$(MAKE) -C $(1) perl
-	$(CP) $(1)/perl $(PERL_CMD)
-	$(CP) $(1)/perl $(STAGING_DIR_HOSTPKG)/usr/bin/perl
+	($(FLOCK) -w 900 9 || { echo perlmod/host/relink: failed to acquire lock; exit 1; }; \
+	    $(MAKE) -C $(1) perl && \
+	    $(INSTALL_BIN) $(1)/perl $(PERL_CMD) && \
+	    $(INSTALL_BIN) $(1)/perl $(STAGING_DIR_HOSTPKG)/usr/bin/perl \
+	) 9> $(TMP_DIR)/.perlmod-perl.flock
 endef
 
 define perlmod/host/Configure
 	(cd $(HOST_BUILD_DIR); \
+	$(FLOCK) -s -w 300 9 || { echo perlmod/host/Configure: failed to acquire lock; exit 1; }; \
 	PERL_MM_USE_DEFAULT=1 \
 	$(2) \
 	$(PERL_CMD) Makefile.PL \
 		$(1) \
-	);
+	) 9> $(TMP_DIR)/.perlmod-perl.flock;
 endef
 
 define perlmod/host/Compile
+	($(FLOCK) -s -w 300 9 || { echo perlmod/host/Compile: failed to acquire lock; exit 1; }; \
 	$(2) \
 	$(MAKE) -C $(HOST_BUILD_DIR) \
 		$(1) \
-		install
+		install \
+	) 9> $(TMP_DIR)/.perlmod-perl.flock
 endef
 
 define perlmod/host/Install
+	($(FLOCK) -s -w 300 9 || { echo perlmod/host/Install: failed to acquire lock; exit 1; }; \
 	$(2) \
 	$(MAKE) -C $(HOST_BUILD_DIR) \
 		$(1) \
-		install
+		install \
+	) 9> $(TMP_DIR)/.perlmod-perl.flock
 	$(call perlmod/host/relink,$(HOST_BUILD_DIR))
 endef
 
 define perlmod/Configure
 	(cd $(if $(3),$(3),$(PKG_BUILD_DIR)); \
+	 $(FLOCK) -s -w 300 9 || { echo perlmod/Configure: failed to acquire lock; exit 1; }; \
 	 (echo -e 'use Config;\n\n$$$${tied %Config::Config}{cpprun}="$(GNU_TARGET_NAME)-cpp -E";\n' ; cat Makefile.PL) | \
 	 PERL_MM_USE_DEFAULT=1 \
 	 $(2) \
@@ -104,16 +127,18 @@ define perlmod/Configure
 		INSTALLVENDORMAN3DIR=" " \
 		LINKTYPE=dynamic \
 		DESTDIR=$(PKG_INSTALL_DIR) \
-	)
+	) 9> $(TMP_DIR)/.perlmod-perl.flock
 	sed -i -e 's!^PERL_INC = .*!PERL_INC = $(STAGING_DIR)/usr/lib/perl5/$(PERL_VERSION)/CORE/!' $(if $(3),$(3),$(PKG_BUILD_DIR))/Makefile
 endef
 
 define perlmod/Compile
+	($(FLOCK) -s -w 300 9 || { echo perlmod/Compile: failed to acquire lock; exit 1; }; \
 	PERL5LIB=$(PERL_LIB) \
 	$(2) \
 	$(MAKE) -C $(if $(3),$(3),$(PKG_BUILD_DIR)) \
 		$(1) \
-		install
+		install \
+	) 9> $(TMP_DIR)/.perlmod-perl.flock
 endef
 
 define perlmod/Install/NoStrip

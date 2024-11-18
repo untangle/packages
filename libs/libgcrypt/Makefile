@@ -8,16 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libgcrypt
-PKG_VERSION:=1.6.6
-PKG_RELEASE:=2
+PKG_VERSION:=1.10.3
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=https://www.gnupg.org/ftp/gcrypt/libgcrypt/
-PKG_HASH:=f9461b4619bb78b273a88d468915750d418e89a3ea3b641bab0563a9af4b04d0
-PKG_LICENSE:=LGPL-2.1+ GPL-2.0+
-PKG_LICENSE_FILES:=COPYING
+PKG_HASH:=8b0870897ac5ac67ded568dcfadf45969cfa8a6beb0fd60af2a9eadc2a3272aa
 
-PKG_FIXUP:=autoreconf patch-libtool
+PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
+PKG_CPE_ID:=cpe:/a:gnupg:libgcrypt
+
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 
@@ -28,8 +28,9 @@ define Package/libgcrypt
   CATEGORY:=Libraries
   DEPENDS:=+libgpg-error
   TITLE:=GNU crypto library
-  URL:=http://directory.fsf.org/security/libgcrypt.html
-  MAINTAINER:=W. Michael Petullo <mike@flyn.org>
+  URL:=https://www.gnupg.org/related_software/libgcrypt/
+  LICENSE:=LGPL-2.1-or-later
+  LICENSE_FILES:=COPYING.LIB
 endef
 
 define Package/libgcrypt/description
@@ -47,19 +48,20 @@ CONFIGURE_ARGS += \
 	--enable-shared \
 	--enable-static \
 	--disable-asm \
+	--disable-doc \
 	--with-gpg-error-prefix="$(STAGING_DIR)/usr"
 
 TARGET_CFLAGS += $(FPIC)
 
 define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/bin $(2)/bin $(1)/usr/include $(1)/usr/lib $(1)/usr/share/aclocal
+	$(INSTALL_DIR) $(1)/usr/bin $(2)/bin $(1)/usr/include $(1)/usr/lib/pkgconfig $(1)/usr/share/aclocal
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/libgcrypt-config $(1)/usr/bin/
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/gcrypt*.h $(1)/usr/include/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libgcrypt.{la,a,so*} $(1)/usr/lib/
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/aclocal/libgcrypt.m4 $(1)/usr/share/aclocal/
-	$(SED) 's,^libdir=\"$$$${exec_prefix}/lib,libdir=\"$(STAGING_DIR)/usr/lib,g' $(1)/usr/bin/libgcrypt-config
-	$(SED) 's,^includedir=\"$$$${prefix}/include/,includedir=\"$(STAGING_DIR)/usr/include/,g' $(1)/usr/bin/libgcrypt-config
-	ln -sf $(STAGING_DIR)/usr/bin/libgcrypt-config $(2)/bin/
+	$(SED) 's,^\(prefix\|exec_prefix\)=.*,\1=$(STAGING_DIR)/usr,g' $(1)/usr/bin/libgcrypt-config
+	$(LN) ../../usr/bin/libgcrypt-config $(2)/bin/libgcrypt-config
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/*.pc $(1)/usr/lib/pkgconfig
 endef
 
 define Package/libgcrypt/install

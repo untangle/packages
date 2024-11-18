@@ -9,13 +9,17 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=xinetd
 PKG_VERSION:=2.3.15
-PKG_RELEASE:=5
+PKG_RELEASE:=16
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/xinetd-org/xinetd/archive
-PKG_HASH:=bf4e060411c75605e4dcbdf2ac57c6bd9e1904470a2f91e01ba31b50a80a5be3
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_VERSION:=$(PKG_NAME)-2-3-15
+PKG_SOURCE_URL:=https://github.com/xinetd-org/xinetd
+PKG_MIRROR_HASH:=f2fc2c6decb2334848c277915e10dee7463aacd1411d61c953ff908aaad8d275
+
+PKG_MAINTAINER:=Florian Eckert <fe@dev.tdt.de>
 PKG_LICENSE:=xinetd
 PKG_LICENSE_FILES:=COPYRIGHT
+PKG_CPE_ID:=cpe:/a:xinetd:xinetd
 
 PKG_INSTALL:=1
 
@@ -26,7 +30,6 @@ define Package/xinetd
   CATEGORY:=Network
   TITLE:=A powerful and secure super-server
   URL:=https://github.com/xinetd-org
-  PKG_MAINTAINER:=Jonathan McCrohan <jmccrohan@gmail.com>
 endef
 
 define Package/xinetd/description
@@ -38,8 +41,8 @@ define Package/xinetd/description
 endef
 
 define Package/xinetd/conffiles
-/etc/xinetd.conf
-/etc/xinetd.d/
+/etc/config/xinetd
+/etc/xinetd.d
 endef
 
 TARGET_CFLAGS += -DNO_RPC
@@ -57,11 +60,11 @@ CONFIGURE_VARS += \
 define Package/xinetd/install
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/xinetd $(1)/usr/sbin/
-	$(INSTALL_DIR) $(1)/etc
-	$(INSTALL_DATA) ./files/xinetd.conf $(1)/etc/xinetd.conf
-	$(INSTALL_DIR) $(1)/etc/xinetd.d
+	$(INSTALL_DIR) $(1)/etc/config/
+	$(INSTALL_DATA) ./files/xinetd.uci.conf.sample $(1)/etc/config/xinetd
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/xinetd.init $(1)/etc/init.d/xinetd
+	$(INSTALL_DIR) $(1)/etc/xinetd.d
 endef
 
 $(eval $(call BuildPackage,xinetd))

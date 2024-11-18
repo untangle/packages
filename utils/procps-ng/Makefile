@@ -8,24 +8,21 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=procps-ng
-PKG_VERSION:=3.3.11
-PKG_RELEASE:=4
-PKG_LICENSE:=GPL-2.0
+PKG_VERSION:=4.0.4
+PKG_RELEASE:=1
+
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=@SF/procps-ng
+PKG_HASH:=22870d6feb2478adb617ce4f09a787addaf2d260c5a8aa7b17d889a962c5e42e
+
+PKG_MAINTAINER:=
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING COPYING.LIB
-
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://gitlab.com/procps-ng/procps.git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=8a198e3eafbde0b627e9992b41d26e6762e4f8c7
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_HASH:=60da7bd78e834112494e4019998c9de8d61f747eab244ef3c42cadc7fd0958cc
-
-PKG_MAINTAINER:=Gergely Kiss <mail.gery@gmail.com>
+PKG_CPE_ID:=cpe:/a:procps-ng_project:procps-ng
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 PKG_FIXUP:=autoreconf
-PKG_BUILD_DEPENDS:=gettext libiconv
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -34,15 +31,19 @@ CONFIGURE_ARGS += --enable-skill
 # most of these have alternatives provided by busybox applets
 PROCPS_APPLETS := \
     free kill pgrep pkill pmap ps pwdx skill slabtop \
-    snice tload top uptime vmstat w watch
+    snice sysctl tload top uptime vmstat w watch
 
 # procps-ng will be configured with "--bindir=/usr/bin --sbindir=/usr/sbin" and
 # as such executables will be installed there by default, but some of them need
 # to reside in locations such as /bin and /sbin to be in accordance with
 # busybox alternatives which is also other distributions like debian and centos
 # are doing
-PROCPS_APPLETS_DIR_bin:=kill ps watch
-procps-applets-dir=$(if $(findstring $(1),$(PROCPS_APPLETS_DIR_bin)),/bin,/usr/bin)
+PROCPS_APPLETS_SRC_DIR_SBIN:=sysctl
+procps-applets-src-dir=$(if $(filter $(PROCPS_APPLETS_SRC_DIR_SBIN),$(1)),/usr/sbin,/usr/bin)
+
+PROCPS_APPLETS_DIR_BIN:=kill ps watch
+PROCPS_APPLETS_DIR_SBIN:=sysctl
+procps-applets-dir=$(if $(filter $(PROCPS_APPLETS_DIR_BIN),$(1)),/bin,$(if $(filter $(PROCPS_APPLETS_DIR_SBIN),$(1)),/sbin,/usr/bin))
 
 define Package/procps-ng/Default
   SECTION:=utils
@@ -72,20 +73,19 @@ define Package/procps-ng/description
 endef
 
 define GenPlugin
- define Package/$(1)
+ define Package/procps-ng-$(1)
    $(call Package/procps-ng/Default)
    DEPENDS:=procps-ng
-   TITLE:=Applet $(2) from the procps-ng package
-   DEFAULT:=y
-   ALTERNATIVES:=200:$(3)/$(2):$(3)/$(1)
+   TITLE:=Applet $(1) from the procps-ng package
+   ALTERNATIVES:=200:$(2)/$(1):/usr/libexec/$(1)-procps-ng
  endef
 
- define Package/$(1)/description
-  Installs the applet $(2).
+ define Package/procps-ng-$(1)/description
+  Installs the applet $(1).
  endef
 endef
 
-$(foreach a,$(PROCPS_APPLETS),$(eval $(call GenPlugin,procps-ng-$(a),$(a),$(call procps-applets-dir,$(a)))))
+$(foreach a,$(PROCPS_APPLETS),$(eval $(call GenPlugin,$(a),$(call procps-applets-dir,$(a)))))
 
 MAKE_FLAGS += \
 	CFLAGS="$(TARGET_CFLAGS)" \
@@ -94,17 +94,23 @@ MAKE_FLAGS += \
 
 define Package/procps-ng/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/libprocps.so* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libproc2.so* $(1)/usr/lib/
+endef
+
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/* $(1)/usr/lib/
 endef
 
 define BuildPlugin
-  define Package/$(1)/install
-	$(INSTALL_DIR) $$(1)$(3)
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/$(2) $$(1)$(3)/$(1)
+  define Package/procps-ng-$(1)/install
+	$(INSTALL_DIR) $$(1)/usr/libexec
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)$(2)/$(1) $$(1)/usr/libexec/$(1)-procps-ng
   endef
 
-  $$(eval $$(call BuildPackage,$(1)))
+  $$(eval $$(call BuildPackage,procps-ng-$(1)))
 endef
 
-$(foreach a,$(PROCPS_APPLETS),$(eval $(call BuildPlugin,procps-ng-$(a),$(a),$(call procps-applets-dir,$(a)))))
+$(foreach a,$(PROCPS_APPLETS),$(eval $(call BuildPlugin,$(a),$(call procps-applets-src-dir,$(a)))))
 $(eval $(call BuildPackage,procps-ng))

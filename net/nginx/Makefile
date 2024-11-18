@@ -8,28 +8,50 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
-PKG_VERSION:=1.14.0
-PKG_RELEASE:=1
+PKG_VERSION:=1.26.1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://nginx.org/download/
-PKG_HASH:=5d15becbf69aba1fe33f8d416d97edd95ea8919ea9ac519eff9bafebb6022cb5
+PKG_SOURCE_URL:=https://nginx.org/download/
+PKG_HASH:=f9187468ff2eb159260bfd53867c25ff8e334726237acf227b9e870e53d3e36b
 
-PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de>
+PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de> \
+				Christian Marangi <ansuelsmth@gmail.com>
 PKG_LICENSE:=2-clause BSD-like license
+PKG_CPE_ID:=cpe:/a:nginx:nginx
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/nginx-$(PKG_VERSION)
-
+PKG_FIXUP:=autoreconf
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
+PKG_BUILD_FLAGS:=gc-sections lto
+
+# 3rd-party modules
+PKG_MOD_EXTRA := \
+	geoip2 \
+	lua \
+	lua-resty-core \
+	lua-resty-lrucache \
+	rtmp \
+	dav-ext \
+	naxsi \
+	brotli \
+	headers-more \
+	ts \
+	ubus \
+	njs
+# official and 3rd-party modules
+PKG_MOD_ALL := \
+	$(PKG_MOD_EXTRA) \
+	stream
+PKG_MOD_PATCHED := $(shell find patches -mindepth 1 -maxdepth 1 -type d -name 'nginx-mod-*' | sed -E 's,^patches/nginx-mod-,,')
 
 PKG_CONFIG_DEPENDS := \
-	CONFIG_NGINX_SSL \
 	CONFIG_NGINX_DAV \
 	CONFIG_NGINX_FLV \
 	CONFIG_NGINX_STUB_STATUS \
 	CONFIG_NGINX_HTTP_CHARSET \
 	CONFIG_NGINX_HTTP_GZIP \
+	CONFIG_NGINX_HTTP_GZIP_STATIC \
 	CONFIG_NGINX_HTTP_SSI \
 	CONFIG_NGINX_HTTP_USERID \
 	CONFIG_NGINX_HTTP_ACCESS \
@@ -57,309 +79,435 @@ PKG_CONFIG_DEPENDS := \
 	CONFIG_NGINX_HTTP_UPSTREAM_ZONE \
 	CONFIG_NGINX_HTTP_CACHE \
 	CONFIG_NGINX_HTTP_V2 \
+	CONFIG_NGINX_HTTP_QUIC \
 	CONFIG_NGINX_PCRE \
-	CONFIG_NGINX_NAXSI \
-	CONFIG_NGINX_LUA \
 	CONFIG_NGINX_HTTP_REAL_IP \
 	CONFIG_NGINX_HTTP_SECURE_LINK \
-	CONFIG_NGINX_HTTP_BROTLI \
-	CONFIG_NGINX_HEADERS_MORE
+	CONFIG_NGINX_STREAM_REAL_IP \
+	CONFIG_OPENSSL_ENGINE \
+	CONFIG_OPENSSL_WITH_NPN \
+	$(foreach m,$(PKG_MOD_EXTRA),CONFIG_PACKAGE_$(m))
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
-define Package/nginx
+define Package/nginx/default
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=Web Servers/Proxies
   TITLE:=Nginx web server
   URL:=http://nginx.org/
-  DEPENDS:=+NGINX_PCRE:libpcre +(NGINX_SSL||NGINX_HTTP_CACHE||NGINX_HTTP_AUTH_BASIC):libopenssl +NGINX_HTTP_GZIP:zlib +NGINX_LUA:liblua +libpthread
+  DEPENDS:=+libopenssl +libpthread
+  PROVIDES:=nginx
 endef
 
 define Package/nginx/description
- nginx is an HTTP and reverse proxy server, as well as a mail proxy server,
+ nginx is an HTTP and reverse proxy server, as well as a mail proxy server, \
  written by Igor Sysoev.
 endef
-
-define Package/nginx/config
-  source "$(SOURCE)/Config.in"
-endef
-
-config_files=nginx.conf mime.types
 
 define Package/nginx/conffiles
 /etc/nginx/
 endef
 
-ADDITIONAL_MODULES:=
-ifeq ($(CONFIG_NGINX_NAXSI),y)
-  ADDITIONAL_MODULES += --add-module=$(PKG_BUILD_DIR)/nginx-naxsi/naxsi_src
-endif
-ifeq ($(CONFIG_NGINX_LUA),y)
-  ADDITIONAL_MODULES += --add-module=$(PKG_BUILD_DIR)/lua-nginx
-endif
-ifeq ($(CONFIG_IPV6),y)
-  ADDITIONAL_MODULES += --with-ipv6
-endif
-ifeq ($(CONFIG_NGINX_STUB_STATUS),y)
-  ADDITIONAL_MODULES += --with-http_stub_status_module
-endif
-ifeq ($(CONFIG_NGINX_FLV),y)
-  ADDITIONAL_MODULES += --with-http_flv_module
-endif
-ifeq ($(CONFIG_NGINX_SSL),y)
-  ADDITIONAL_MODULES += --with-http_ssl_module
-endif
-ifeq ($(CONFIG_NGINX_DAV),y)
-  ADDITIONAL_MODULES += --with-http_dav_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_CACHE),y)
-  ADDITIONAL_MODULES += --without-http-cache
-endif
-ifneq ($(CONFIG_NGINX_PCRE),y)
-  ADDITIONAL_MODULES += --without-pcre
-endif
-ifneq ($(CONFIG_NGINX_HTTP_CHARSET),y)
-  ADDITIONAL_MODULES += --without-http_charset_module
-else
-  config_files += koi-utf koi-win win-utf
-endif
-ifneq ($(CONFIG_NGINX_HTTP_GZIP),y)
-  ADDITIONAL_MODULES += --without-http_gzip_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_SSI),y)
-  ADDITIONAL_MODULES += --without-http_ssi_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_USERID),y)
-  ADDITIONAL_MODULES += --without-http_userid_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_ACCESS),y)
-  ADDITIONAL_MODULES += --without-http_access_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_AUTH_BASIC),y)
-  ADDITIONAL_MODULES += --without-http_auth_basic_module
-endif
-ifeq ($(CONFIG_NGINX_HTTP_AUTH_REQUEST),y)
-  ADDITIONAL_MODULES += --with-http_auth_request_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_AUTOINDEX),y)
-  ADDITIONAL_MODULES += --without-http_autoindex_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_GEO),y)
-  ADDITIONAL_MODULES += --without-http_geo_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_MAP),y)
-  ADDITIONAL_MODULES += --without-http_map_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_SPLIT_CLIENTS),y)
-  ADDITIONAL_MODULES += --without-http_split_clients_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_REFERER),y)
-  ADDITIONAL_MODULES += --without-http_referer_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_REWRITE),y)
-  ADDITIONAL_MODULES += --without-http_rewrite_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_PROXY),y)
-  ADDITIONAL_MODULES += --without-http_proxy_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_FASTCGI),y)
-  ADDITIONAL_MODULES += --without-http_fastcgi_module
-else
-  config_files += fastcgi_params
-endif
-ifneq ($(CONFIG_NGINX_HTTP_UWSGI),y)
-  ADDITIONAL_MODULES += --without-http_uwsgi_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_SCGI),y)
-  ADDITIONAL_MODULES += --without-http_scgi_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_MEMCACHED),y)
-  ADDITIONAL_MODULES += --without-http_memcached_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_LIMIT_CONN),y)
-  ADDITIONAL_MODULES += --without-http_limit_conn_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_LIMIT_REQ),y)
-  ADDITIONAL_MODULES += --without-http_limit_req_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_EMPTY_GIF),y)
-  ADDITIONAL_MODULES += --without-http_empty_gif_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_BROWSER),y)
-  ADDITIONAL_MODULES += --without-http_browser_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_UPSTREAM_HASH),y)
-  ADDITIONAL_MODULES += --without-http_upstream_hash_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_UPSTREAM_IP_HASH),y)
-  ADDITIONAL_MODULES += --without-http_upstream_ip_hash_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_UPSTREAM_LEAST_CONN),y)
-  ADDITIONAL_MODULES += --without-http_upstream_least_conn_module
-endif
-ifneq ($(CONFIG_NGINX_HTTP_UPSTREAM_KEEPALIVE),y)
-  ADDITIONAL_MODULES += --without-http_upstream_keepalive_module
-endif
-ifeq ($(CONFIG_NGINX_HTTP_V2),y)
-  ADDITIONAL_MODULES += --with-http_v2_module
-endif
-ifeq ($(CONFIG_NGINX_HTTP_REAL_IP),y)
-  ADDITIONAL_MODULES += --with-http_realip_module
-endif
-ifeq ($(CONFIG_NGINX_HTTP_SECURE_LINK),y)
-  ADDITIONAL_MODULES += --with-http_secure_link_module
-endif
-ifeq ($(CONFIG_NGINX_HEADERS_MORE),y)
-  ADDITIONAL_MODULES += --add-module=$(PKG_BUILD_DIR)/nginx-headers-more
-endif
-ifeq ($(CONFIG_NGINX_HTTP_BROTLI),y)
-  ADDITIONAL_MODULES += --add-module=$(PKG_BUILD_DIR)/nginx-brotli
-endif
+define Package/nginx-ssl
+  $(Package/nginx/default)
+  TITLE += with SSL support
+  VARIANT:=ssl
+  DEPENDS+= +NGINX_PCRE:libpcre2 \
+	+NGINX_PCRE:nginx-ssl-util +!NGINX_PCRE:nginx-ssl-util-nopcre \
+	+NGINX_HTTP_GZIP:zlib +NGINX_DAV:libxml2
+  EXTRA_DEPENDS:=nginx-ssl-util$(if $(CONFIG_NGINX_PCRE),,-nopcre) (>=1.5-r1)
+  CONFLICTS:=nginx-full
+endef
+
+Package/nginx-ssl/description = $(Package/nginx/description) \
+  This variant is compiled with SSL support enabled. To enable additional module \
+  select them in the nginx default configuration menu.
+
+define Package/nginx-ssl/config
+  source "$(SOURCE)/Config_ssl.in"
+endef
+
+Package/nginx-ssl/conffiles = $(Package/nginx/conffiles)
+
+IsEnabled = $(or $(filter full,$(BUILD_VARIANT)),$(CONFIG_$(1)))
+IsDisabled = $(if $(call IsEnabled,$(1)),,1)
+
+config_files := mime.types \
+	$(if $(call IsEnabled,NGINX_HTTP_CHARSET),koi-utf koi-win win-utf) \
+	$(if $(call IsEnabled,NGINX_HTTP_FASTCGI),fastcgi_params) \
+	$(if $(call IsEnabled,NGINX_HTTP_UWSGI),uwsgi_params) \
+	$(if $(call IsEnabled,NGINX_HTTP_SCGI),scgi_params)
+
+define Package/nginx-ssl/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/nginx $(1)/usr/sbin/
+	$(INSTALL_DIR) $(1)/etc/nginx/module.d
+	$(INSTALL_DIR) $(1)/etc/nginx/conf.d
+	$(INSTALL_DATA) $(addprefix $(PKG_INSTALL_DIR)/etc/nginx/,$(config_files)) $(1)/etc/nginx/
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/nginx.init $(1)/etc/init.d/nginx
+endef
+
+define Package/nginx-ssl/prerm
+#!/bin/sh
+[ -z "$${IPKG_INSTROOT}" ] || exit 0
+[ "$${PKG_UPGRADE}" = "1" ] && exit 0
+eval $$(/usr/bin/nginx-util get_env)
+[ "$$(uci get "nginx.$${LAN_NAME}.$${MANAGE_SSL}")" = "self-signed" ] || exit 0
+rm -f "$$(uci get "nginx.$${LAN_NAME}.ssl_certificate")"
+rm -f "$$(uci get "nginx.$${LAN_NAME}.ssl_certificate_key")"
+exit 0
+endef
+
+define Package/nginx-full
+  $(Package/nginx/default)
+  TITLE += with ALL config selected
+  DEPENDS+=+libpcre2 +nginx-ssl-util +zlib +libxml2
+  EXTRA_DEPENDS:=nginx-ssl-util (>=1.5-r1)
+  VARIANT:=full
+  PROVIDES += nginx-ssl
+endef
+
+Package/nginx-full/description = $(Package/nginx/description) \
+  This variant is compiled with ALL config selected.
+
+Package/nginx-full/install = $(Package/nginx-ssl/install)
+
+Package/nginx-full/prerm = $(Package/nginx-ssl/prerm)
+
+Package/nginx-full/conffiles = $(Package/nginx/conffiles)
 
 define Package/nginx-mod-luci
+  TITLE:=Nginx on LuCI
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=Web Servers/Proxies
   TITLE:=Support file for Nginx
   URL:=http://nginx.org/
-  DEPENDS:=nginx +uwsgi-cgi +uwsgi-cgi-luci-support
+  DEPENDS:=+uwsgi +uwsgi-luci-support +nginx-ssl +nginx-mod-ubus
+  # TODO: add PROVIDES when removing nginx-mod-luci-ssl
+  # PROVIDES:=nginx-mod-luci-ssl
 endef
 
 define Package/nginx-mod-luci/description
- Support file for LuCI in nginx (include custom nginx configuration, autostart script for uwsgi)
+ Support file for LuCI in nginx. Include custom nginx configuration, autostart script for uwsgi.
 endef
 
-define Package/nginx-mod-luci-ssl
-  SECTION:=net
-  CATEGORY:=Network
-  SUBMENU:=Web Servers/Proxies
-  TITLE:=Support file for Nginx (SSL)
-  URL:=http://nginx.org/
-  DEPENDS:=nginx +nginx-mod-luci
-endef
-
-define Package/nginx-mod-luci-ssl/description
- Support file for LuCI in nginx (include custom nginx configuration, autostart script for uwsgi, redirect from http to https)
-endef
-
-TARGET_CFLAGS += -fvisibility=hidden -ffunction-sections -fdata-sections -DNGX_LUA_NO_BY_LUA_BLOCK
-TARGET_LDFLAGS += -Wl,--gc-sections
-
-define Build/Configure
-	( cd $(PKG_BUILD_DIR) ; \
-		$(if $(CONFIG_NGINX_LUA),LUA_INC=$(STAGING_DIR)/usr/include LUA_LIB=$(STAGING_DIR)/usr/lib) \
-		./configure \
-			--crossbuild=Linux::$(ARCH) \
-			--prefix=/usr \
-			--conf-path=/etc/nginx/nginx.conf \
-			$(ADDITIONAL_MODULES) \
-			--error-log-path=/var/log/nginx/error.log \
-			--pid-path=/var/run/nginx.pid \
-			--lock-path=/var/lock/nginx.lock \
-			--http-log-path=/var/log/nginx/access.log \
-			--http-client-body-temp-path=/var/lib/nginx/body \
-			--http-proxy-temp-path=/var/lib/nginx/proxy \
-			--http-fastcgi-temp-path=/var/lib/nginx/fastcgi \
-			--with-cc="$(TARGET_CC)" \
-			--with-cc-opt="$(TARGET_CPPFLAGS) $(TARGET_CFLAGS)" \
-			--with-ld-opt="$(TARGET_LDFLAGS)" \
-			--without-http_upstream_zone_module \
-	)
+define Package/nginx-mod-luci/preinst
+#!/bin/sh
+grep -r -l ngx_http_ubus_module.so /etc/nginx/module.d | grep -v ngx_http_ubus.module | while read file; do
+  echo "Removing old LuCI module load file for 'ngx_http_ubus.so' in $$file."
+  rm -f $$file
+done
+exit 0
 endef
 
 define Package/nginx-mod-luci/install
-	$(INSTALL_DIR) $(1)/etc/nginx
-	$(INSTALL_BIN) ./files-luci-support/luci_uwsgi.conf $(1)/etc/nginx/luci_uwsgi.conf
-	$(INSTALL_BIN) ./files-luci-support/luci_nginx.conf $(1)/etc/nginx/luci_nginx.conf
+	$(INSTALL_DIR) $(1)/etc/nginx/conf.d
+	$(INSTALL_CONF) ./files-luci-support/luci.locations $(1)/etc/nginx/conf.d/
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./files-luci-support/60_nginx-luci-support $(1)/etc/uci-defaults/60_nginx-luci-support
 endef
 
-define Package/nginx-mod-luci-ssl/install
-	$(INSTALL_DIR) $(1)/etc/nginx
-	$(INSTALL_BIN) ./files-luci-support/luci_nginx_ssl.conf $(1)/etc/nginx/luci_nginx_ssl.conf
-	$(INSTALL_DIR) $(1)/etc/uci-defaults
-	$(INSTALL_BIN) ./files-luci-support/70_nginx-luci-support-ssl $(1)/etc/uci-defaults/70_nginx-luci-support-ssl
+define Download/nginx-mod-geoip2
+  VERSION:=3.4
+  URL:=https://github.com/leev/ngx_http_geoip2_module
+  MIRROR_HASH:=22d67e35067faed200ea398581dd0dc9d599bc6ab4c0ea2034a1ea55666fdc1d
+  PROTO:=git
 endef
 
-define Package/nginx/install
-	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/nginx $(1)/usr/sbin/
+define Package/nginx-mod-lua-resty-lrucache
+  $(call Package/nginx/default)
+  DEPENDS:=@HAS_LUAJIT_ARCH +luajit2
+  TITLE:=Nginx Lua OpenResty lrucache module
+endef
+
+define Package/nginx-mod-lua-resty-core
+  $(call Package/nginx/default)
+  DEPENDS:=+nginx-mod-lua-resty-lrucache
+  TITLE:=Nginx Lua OpenResty core module
+endef
+
+define Package/nginx-mod-lua-resty-lrucache/install
+	$(INSTALL_DIR) $(1)/usr/lib/lua/resty/lrucache
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/nginx-mod-lua-resty-lrucache/lib/resty/*.lua $(1)/usr/lib/lua/resty
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/nginx-mod-lua-resty-lrucache/lib/resty/lrucache/*.lua $(1)/usr/lib/lua/resty/lrucache
+endef
+
+define Package/nginx-mod-lua-resty-core/install
+	$(INSTALL_DIR) $(1)/usr/lib/lua/ngx/ssl
+	$(INSTALL_DIR) $(1)/usr/lib/lua/resty/core
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/nginx-mod-lua-resty-core/lib/ngx/*.lua $(1)/usr/lib/lua/ngx
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/nginx-mod-lua-resty-core/lib/ngx/ssl/*.lua $(1)/usr/lib/lua/ngx/ssl
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/nginx-mod-lua-resty-core/lib/resty/*.lua $(1)/usr/lib/lua/resty
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/nginx-mod-lua-resty-core/lib/resty/core/*.lua $(1)/usr/lib/lua/resty/core
+endef
+
+define Download/nginx-mod-headers-more
+  SOURCE_DATE:=2022-07-17
+  VERSION:=bea1be3bbf6af28f6aa8cf0c01c07ee1637e2bd0
+  URL:=https://github.com/openresty/headers-more-nginx-module.git
+  MIRROR_HASH:=569abadc137b5b52bdcc33b00aa21f6d266cb84fb891795da2c4e101c4898abe
+  PROTO:=git
+endef
+
+define Download/nginx-mod-brotli
+  SOURCE_DATE:=2020-04-23
+  VERSION:=25f86f0bac1101b6512135eac5f93c49c63609e3
+  URL:=https://github.com/google/ngx_brotli.git
+  MIRROR_HASH:=680c56be79e7327cb8df271646119333d2f6965a3472bc7043721625fa4488f5
+  PROTO:=git
+endef
+
+define Download/nginx-mod-rtmp
+  SOURCE_DATE:=2018-12-07
+  VERSION:=f0ea62342a4eca504b311cd5df910d026c3ea4cf
+  URL:=https://github.com/ut0mt8/nginx-rtmp-module.git
+  MIRROR_HASH:=9c98d886ae4ea3708bb0bca55f8df803418a407e0ffc6df56341bd76ad39cba8
+  PROTO:=git
+endef
+
+define Download/nginx-mod-ts
+  SOURCE_DATE:=2017-12-04
+  VERSION:=ef2f874d95cc75747eb625a292524a702aefb0fd
+  URL:=https://github.com/arut/nginx-ts-module.git
+  MIRROR_HASH:=3f144d4615a4aaa1215435cd06ae4054ea12206d5b38306321420f7acc62aca8
+  PROTO:=git
+endef
+
+define Download/nginx-mod-naxsi
+  SOURCE_DATE:=2022-09-14
+  VERSION:=d714f1636ea49a9a9f4f06dba14aee003e970834
+  URL:=https://github.com/nbs-system/naxsi.git
+  MIRROR_HASH:=b0cef5fbf842f283eb5f0686ddd1afcd07d83abd7027c8cfb3e84a2223a34797
+  PROTO:=git
+endef
+
+define Download/nginx-mod-lua
+  SOURCE_DATE:=2023-08-19
+  VERSION:=c89469e920713d17d703a5f3736c9335edac22bf
+  URL:=https://github.com/openresty/lua-nginx-module.git
+  MIRROR_HASH:=c3bdf1b23f0a63991b5dcbd1f8ee150e6f893b43278e8600e4e0bb42a6572db4
+  PROTO:=git
+endef
+
+define Download/nginx-mod-lua-resty-core
+  SOURCE_DATE:=2023-09-09
+  VERSION:=2e2b2adaa61719972fe4275fa4c3585daa0dcd84
+  URL:=https://github.com/openresty/lua-resty-core.git
+  MIRROR_HASH:=c5f3df92fd72eac5b54497c039aca0f0d9ea1d87223f1e3a54365ba565991874
+  PROTO:=git
+endef
+
+define Download/nginx-mod-lua-resty-lrucache
+  SOURCE_DATE:=2023-08-06
+  VERSION:=52f5d00403c8b7aa8a4d4f3779681976b10a18c1
+  URL:=https://github.com/openresty/lua-resty-lrucache.git
+  MIRROR_HASH:=0833e0114948af4edb216c5c34b3f1919f534b298f4fa29739544f7c9bb8a08d
+  PROTO:=git
+endef
+
+define Download/nginx-mod-dav-ext
+  SOURCE_DATE:=2018-12-17
+  VERSION:=f5e30888a256136d9c550bf1ada77d6ea78a48af
+  URL:=https://github.com/arut/nginx-dav-ext-module.git
+  MIRROR_HASH:=c574e60ffab5f6e5d8bea18aab0799c19cd9a84f3d819b787e9af4f0e7867b52
+  PROTO:=git
+endef
+
+define Download/nginx-mod-ubus
+  SOURCE_DATE:=2020-09-06
+  VERSION:=b2d7260dcb428b2fb65540edb28d7538602b4a26
+  URL:=https://github.com/Ansuel/nginx-ubus-module.git
+  MIRROR_HASH:=515bb9d355ad80916f594046a45c190a68fb6554d6795a54ca15cab8bdd12fda
+  PROTO:=git
+endef
+
+define Download/nginx-mod-njs
+  SOURCE_DATE:=2024-10-03
+  VERSION:=c5a29a7af8894ee1ec44ebda71ef0ea1f2a31af6
+  URL:=https://github.com/nginx/njs.git
+  MIRROR_HASH:=69bc424d4bfd8b7a0a70feeb4787ff8b503ac893fb730f07f3244e35fde876e4
+  PROTO:=git
+endef
+
+define Module/Download
+  define Download/nginx-mod-$(1) +=
+
+    SUBDIR:=nginx-mod-$(1)
+    FILE:=nginx-mod-$(1)-$$$$(subst -,.,$$$$(SOURCE_DATE))~$$$$(call version_abbrev,$$$$(VERSION)).tar.zst
+  endef
+endef
+$(foreach m,$(PKG_MOD_EXTRA),$(eval $(call Module/Download,$(m))))
+
+define Module/nginx-mod-naxsi/install
 	$(INSTALL_DIR) $(1)/etc/nginx
-	$(INSTALL_DATA) $(addprefix $(PKG_INSTALL_DIR)/etc/nginx/,$(config_files)) $(1)/etc/nginx/
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/nginx.init $(1)/etc/init.d/nginx
-ifeq ($(CONFIG_NGINX_NAXSI),y)
-	$(INSTALL_DIR) $(1)/etc/nginx
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/nginx-naxsi/naxsi_config/naxsi_core.rules $(1)/etc/nginx
-	chmod 0640 $(1)/etc/nginx/naxsi_core.rules
-endif
-	$(if $(CONFIG_NGINX_NAXSI),$($(INSTALL_BIN) $(PKG_BUILD_DIR)/nginx-naxsi/naxsi_config/naxsi_core.rules $(1)/etc/nginx))
-	$(if $(CONFIG_NGINX_NAXSI),$(chmod 0640 $(1)/etc/nginx/naxsi_core.rules))
+	$(INSTALL_CONF) $(PKG_BUILD_DIR)/nginx-mod-naxsi/naxsi_config/naxsi_core.rules $(1)/etc/nginx
+endef
+
+define Quilt/Refresh/Package
+	$(call Quilt/RefreshDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/nginx,nginx/)
+	$(foreach m,$(PKG_MOD_PATCHED),
+		$(call Quilt/RefreshDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/nginx-mod-$(m),nginx-mod-$(m)/)
+	)
+endef
+
+define Build/Patch
+	$(if $(QUILT),rm -rf $(PKG_BUILD_DIR)/patches; mkdir -p $(PKG_BUILD_DIR)/patches)
+	$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/nginx,nginx/)
+	$(foreach m,$(PKG_MOD_PATCHED),$(if $(or $(CONFIG_PACKAGE_nginx-mod-$(m)),$(QUILT)),
+		$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/nginx-mod-$(m),nginx-mod-$(m)/)
+	))
+	$(if $(QUILT),touch $(PKG_BUILD_DIR)/.quilt_used)
+endef
+
+define Module/Build/Prepare
+	$(eval $(call Download,nginx-mod-$(1)))
+	$(eval $(Download/nginx-mod-$(1)))
+	mkdir -p $(PKG_BUILD_DIR)/nginx-mod-$(1)
+	zstdcat $(DL_DIR)/$(FILE) | tar -C $(PKG_BUILD_DIR)/nginx-mod-$(1) $(TAR_OPTIONS) --strip-components 1
 endef
 
 define Build/Prepare
-	$(call Build/Prepare/Default)
-	$(if $(CONFIG_NGINX_NAXSI),$(call Prepare/nginx-naxsi))
-	$(if $(CONFIG_NGINX_LUA),$(call Prepare/lua-nginx))
-	$(if $(CONFIG_NGINX_HTTP_BROTLI),$(call Prepare/nginx-brotli))
-	$(if $(CONFIG_NGINX_HEADERS_MORE),$(call Prepare/nginx-headers-more))
+	rm -rf $(PKG_BUILD_DIR)
+	mkdir -p $(PKG_BUILD_DIR)
+	$(PKG_UNPACK)
+
+	$(foreach m,$(filter-out $(PKG_MOD_PATCHED),$(PKG_MOD_EXTRA)),$(if $(CONFIG_PACKAGE_nginx-mod-$(m)),
+		$(call Module/Build/Prepare,$(m))
+	))
+	$(foreach m,$(PKG_MOD_PATCHED),$(if $(or $(CONFIG_PACKAGE_nginx-mod-$(m)),$(QUILT)),
+		$(call Module/Build/Prepare,$(m))
+	))
+	$(Build/Patch)
 endef
 
-define Download/nginx-headers-more
-	VERSION:=a9f7c7e86cc7441d04e2f11f01c2e3a9c4b0301d
-	SUBDIR:=nginx-headers-more
-	FILE:=headers-more-nginx-module-$(PKG_VERSION)-$$(VERSION).tar.gz
-	URL:=https://github.com/openresty/headers-more-nginx-module.git
-	PROTO:=git
+# $(1) module name
+# $(2) module additional dependency
+# $(3) module so name (stripped of the finaly _module.so)
+# $(4) module description
+define BuildModule
+  define Package/nginx-mod-$(1)
+    $(call Package/nginx/default)
+    DEPENDS:=+nginx-ssl $(2)
+    TITLE:=Nginx $(1) module
+  endef
+
+  define Package/nginx-mod-$(1)/description
+    $(strip $(4))
+  endef
+
+  define Package/nginx-mod-$(1)/install
+	$(INSTALL_DIR) $$(1)/usr/lib/nginx/modules
+	$(INSTALL_DIR) $$(1)/etc/nginx/module.d
+	$(foreach m,$(3),
+	  $(CP) $$(PKG_INSTALL_DIR)/usr/lib/nginx/modules/$(m)_module.so $$(1)/usr/lib/nginx/modules && \
+	  echo "load_module /usr/lib/nginx/modules/$(m)_module.so;" > $$(1)/etc/nginx/module.d/$(m).module
+	)
+	$(call Module/nginx-mod-$(1)/install,$$(1))
+  endef
+
+  $$(eval $$(call BuildPackage,nginx-mod-$(1)))
 endef
 
-define  Prepare/nginx-headers-more
-	$(eval $(call Download,nginx-headers-more))
-	gzip -dc $(DL_DIR)/$(FILE) | tar -C $(PKG_BUILD_DIR) $(TAR_OPTIONS)
-endef
+TARGET_CFLAGS += -DNGX_LUA_NO_BY_LUA_BLOCK
 
-define Download/nginx-brotli
-	VERSION:=37ab9b2933a0b756ba3447000b7f31d432ed8228
-	SUBDIR:=nginx-brotli
-	FILE:=ngx-brotli-module-$(PKG_VERSION)-$$(VERSION).tar.gz
-	URL:=https://github.com/eustas/ngx_brotli.git
-	PROTO:=git
-endef
+ifneq ($(CONFIG_PACKAGE_nginx-mod-lua),)
+  CONFIGURE_VARS += LUAJIT_INC=$(STAGING_DIR)/usr/include/luajit-* \
+					LUAJIT_LIB=$(STAGING_DIR)/usr/lib
+endif
 
-define  Prepare/nginx-brotli
-	$(eval $(call Download,nginx-brotli))
-	gzip -dc $(DL_DIR)/$(FILE) | tar -C $(PKG_BUILD_DIR) $(TAR_OPTIONS)
-endef
+CONFIGURE_VARS += LIBXML2_INC=$(STAGING_DIR)/usr/include/libxml2 \
+			CONFIG_BIG_ENDIAN=$(CONFIG_BIG_ENDIAN)
 
-define Download/nginx-naxsi
-	VERSION:=fc4740f9734cabc1ce4c9d4cddc4b472eab1cc4b
-	SUBDIR:=nginx-naxsi
-	FILE:=nginx-naxsi-module-$(PKG_VERSION)-$$(VERSION).tar.gz
-	URL:=https://github.com/nbs-system/naxsi.git
-	PROTO:=git
-endef
+CONFIGURE_ARGS += \
+	--crossbuild=Linux::$(ARCH) \
+	--prefix=/usr \
+	--conf-path=/etc/nginx/nginx.conf \
+	--modules-path=/usr/lib/nginx/modules \
+	--error-log-path=stderr \
+	--pid-path=/var/run/nginx.pid \
+	--lock-path=/var/lock/nginx.lock \
+	--http-log-path=/var/log/nginx/access.log \
+	--http-client-body-temp-path=/var/lib/nginx/body \
+	--http-proxy-temp-path=/var/lib/nginx/proxy \
+	--http-fastcgi-temp-path=/var/lib/nginx/fastcgi \
+	--with-cc="$(TARGET_CC)" \
+	--with-ld-opt="$(TARGET_LDFLAGS)" \
+	--without-http_upstream_zone_module \
+	--with-compat \
+	--with-http_ssl_module \
+	$(if $(call IsDisabled,NGINX_HTTP_CACHE),--without-http-cache) \
+	$(if $(call IsDisabled,NGINX_PCRE),--without-pcre) \
+	$(if $(call IsDisabled,NGINX_HTTP_CHARSET),--without-http_charset_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_GZIP),--without-http_gzip_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_SSI),--without-http_ssi_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_USERID),--without-http_userid_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_ACCESS),--without-http_access_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_AUTH_BASIC),--without-http_auth_basic_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_AUTOINDEX),--without-http_autoindex_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_GEO),--without-http_geo_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_MAP),--without-http_map_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_SPLIT_CLIENTS),--without-http_split_clients_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_REFERER),--without-http_referer_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_REWRITE),--without-http_rewrite_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_PROXY),--without-http_proxy_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_FASTCGI),--without-http_fastcgi_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_UWSGI),--without-http_uwsgi_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_SCGI),--without-http_scgi_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_MEMCACHED),--without-http_memcached_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_LIMIT_CONN),--without-http_limit_conn_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_LIMIT_REQ),--without-http_limit_req_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_EMPTY_GIF),--without-http_empty_gif_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_BROWSER),--without-http_browser_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_UPSTREAM_HASH),--without-http_upstream_hash_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_UPSTREAM_IP_HASH),--without-http_upstream_ip_hash_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_UPSTREAM_LEAST_CONN),--without-http_upstream_least_conn_module) \
+	$(if $(call IsDisabled,NGINX_HTTP_UPSTREAM_KEEPALIVE),--without-http_upstream_keepalive_module) \
+	$(if $(call IsEnabled,IPV6),--with-ipv6) \
+	$(if $(call IsEnabled,NGINX_HTTP_GZIP_STATIC),--with-http_gzip_static_module) \
+	$(if $(call IsEnabled,NGINX_STUB_STATUS),--with-http_stub_status_module) \
+	$(if $(call IsEnabled,NGINX_FLV),--with-http_flv_module) \
+	$(if $(call IsEnabled,NGINX_DAV),--with-http_dav_module) \
+	$(if $(call IsEnabled,NGINX_HTTP_AUTH_REQUEST),--with-http_auth_request_module) \
+	$(if $(call IsEnabled,NGINX_HTTP_QUIC),--with-http_v3_module) \
+	$(if $(call IsEnabled,NGINX_HTTP_V2),--with-http_v2_module) \
+	$(if $(call IsEnabled,NGINX_HTTP_REAL_IP),--with-http_realip_module) \
+	$(if $(call IsEnabled,NGINX_HTTP_SECURE_LINK),--with-http_secure_link_module) \
+	$(if $(call IsEnabled,NGINX_HTTP_SUB),--with-http_sub_module) \
+	$(if $(CONFIG_PACKAGE_nginx-mod-stream),--with-stream=dynamic --with-stream_ssl_module --with-stream_ssl_preread_module) \
+	$(if $(call IsEnabled,NGINX_STREAM_REAL_IP),--with-stream_realip_module) \
+	$(if $(CONFIG_PACKAGE_nginx-mod-naxsi),--add-dynamic-module=$(PKG_BUILD_DIR)/nginx-mod-naxsi/naxsi_src) \
+	$(if $(CONFIG_PACKAGE_nginx-mod-njs),--add-dynamic-module=$(PKG_BUILD_DIR)/nginx-mod-njs/nginx) \
+	$(foreach m,$(filter-out lua-resty-core lua-resty-lrucache naxsi njs,$(PKG_MOD_EXTRA)), \
+		$(if $(CONFIG_PACKAGE_nginx-mod-$(m)),--add-dynamic-module=$(PKG_BUILD_DIR)/nginx-mod-$(m)))
 
-define  Prepare/nginx-naxsi
-	$(eval $(call Download,nginx-naxsi))
-	gzip -dc $(DL_DIR)/$(FILE) | tar -C $(PKG_BUILD_DIR) $(TAR_OPTIONS)
-endef
-
-define Download/lua-nginx
-	VERSION:=55743aeba3075b34a250380b32bad6366eae6c30
-	SUBDIR:=lua-nginx
-	FILE:=lua-nginx-module-$(PKG_VERSION)-$$(VERSION).tar.gz
-	URL:=https://github.com/openresty/lua-nginx-module.git
-	PROTO:=git
-endef
-
-define  Prepare/lua-nginx
-	$(eval $(call Download,lua-nginx))
-	gzip -dc $(DL_DIR)/$(FILE) | tar -C $(PKG_BUILD_DIR) $(TAR_OPTIONS)
-	$(call PatchDir,$(PKG_BUILD_DIR),./patches-lua-nginx)
-endef
-
-$(eval $(call BuildPackage,nginx))
+$(eval $(call BuildPackage,nginx-ssl))
+$(eval $(call BuildPackage,nginx-full))
 $(eval $(call BuildPackage,nginx-mod-luci))
-$(eval $(call BuildPackage,nginx-mod-luci-ssl))
+$(eval $(call BuildPackage,nginx-mod-lua-resty-lrucache))
+$(eval $(call BuildPackage,nginx-mod-lua-resty-core))
+$(eval $(call BuildModule,stream,+@NGINX_STREAM_CORE_MODULE, \
+	ngx_stream, Add support for NGINX request streaming.))
+$(eval $(call BuildModule,lua,+nginx-mod-lua-resty-core,ngx_http_lua, \
+	Enable Lua module (luajit2 based, OpenResty patches)))
+$(eval $(call BuildModule,ubus,+libubus +libjson-c +libblobmsg-json +@NGINX_UBUS, \
+	ngx_http_ubus,Enable UBUS api support directly from the server.))
+$(eval $(call BuildModule,dav-ext,+@NGINX_DAV +libxml2,ngx_http_dav_ext, \
+	Enable the WebDAV methods PROPFIND OPTIONS LOCK UNLOCK.))
+$(eval $(call BuildModule,headers-more,,ngx_http_headers_more_filter, \
+	Set and clear input and output headers...more than "add"!))
+$(eval $(call BuildModule,rtmp,,ngx_rtmp, \
+	Add support for NGINX-based Media Streaming Server module. DASH enhanced))
+$(eval $(call BuildModule,ts,,ngx_http_ts, \
+	Add support for MPEG-TS Live Module module.))
+$(eval $(call BuildModule,brotli,,ngx_http_brotli_filter ngx_http_brotli_static, \
+	Add support for brotli compression module.))
+$(eval $(call BuildModule,naxsi,,ngx_http_naxsi, \
+	Enable NAXSI module.))
+$(eval $(call BuildModule,geoip2,+@NGINX_STREAM_CORE_MODULE +nginx-mod-stream +libmaxminddb,ngx_http_geoip2 ngx_stream_geoip2, \
+	Enable MaxMind GeoIP2 module.))
+$(eval $(call BuildModule,njs,+zlib +libxml2 +libxslt +libpcre2,ngx_http_js, \
+	Enable NJS module.))

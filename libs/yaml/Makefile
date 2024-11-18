@@ -8,31 +8,35 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=yaml
-PKG_VERSION:=0.1.7
+PKG_VERSION:=0.2.5
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://pyyaml.org/download/libyaml/
-PKG_HASH:=8088e457264a98ba451a90b8661fcb4f9d6f478f7265d48322a196cec2480729
+PKG_HASH:=c642ae9b75fee120b2d96c712538bd2cf283228d2337df2cf2988e3c02678ef4
 
+PKG_MAINTAINER:=
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=COPYING
-PKG_MAINTAINER:=Nicolas Thill <nico@openwrt.org>
+PKG_CPE_ID:=cpe:/a:pyyaml_project:pyyaml
 
-PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/host-build.mk
 
 define Package/libyaml
   SUBMENU:=Languages
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=Fast YAML 1.1 parser and emitter library
-  URL:=http://pyyaml.org/wiki/LibYAML
+  URL:=https://pyyaml.org/wiki/LibYAML
 endef
 
 TARGET_CFLAGS += $(FPIC)
+
+HOST_CONFIGURE_ARGS += --disable-shared
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
@@ -49,3 +53,4 @@ define Package/libyaml/install
 endef
 
 $(eval $(call BuildPackage,libyaml))
+$(eval $(call HostBuild))

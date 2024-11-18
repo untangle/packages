@@ -1,32 +1,25 @@
-#
-# Copyright (C) 2013-2017 OpenWrt.org
-#
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
-
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=xupnpd
-PKG_REV:=7ff74b2d5288fbc35c4f6fcb94466d408b1f853c
-PKG_VERSION:=2017-10-31
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=$(PKG_REV)
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_URL:=https://github.com/clark15b/xupnpd.git
-PKG_SOURCE:=$(PKG_SOURCE_SUBDIR).tar.gz
-PKG_MIRROR_HASH:=333e9938556c9a02b28732b5512626b991c65eaf0eb60d38e29f72ec513d312f
-
-PKG_LICENSE:=GPLv2
-PKG_LICENSE_FILES:=LICENSE
+PKG_SOURCE_URL:=https://github.com/clark15b/xupnpd
+PKG_SOURCE_DATE:=2021-04-08
+PKG_SOURCE_VERSION:=2bc1e741e0efe04cb3150430ff25410093618b4f
+PKG_MIRROR_HASH:=00ba72ed3d394220cc564319d29b79c20e482d904e81aa7563b17349e918f94f
 
 PKG_MAINTAINER:=Álvaro Fernández Rojas <noltari@gmail.com>
+PKG_LICENSE:=GPLv2
+PKG_LICENSE_FILES:=LICENSE
 
 include $(INCLUDE_DIR)/package.mk
 
 LUA_FLAGS:=-llua -lssl -lcrypto
+
+ifneq ($(CONFIG_USE_MUSL),)
+  TARGET_CFLAGS += -D_LARGEFILE64_SOURCE
+endif
 
 define Build/Compile
 	(cd $(PKG_BUILD_DIR)/src; $(TARGET_CC) -v $(LUA_FLAGS) $(TARGET_CFLAGS) -fno-exceptions -fno-rtti -DWITH_URANDOM $(TARGET_CPPFLAGS) $(TARGET_LDFLAGS) -lm -ldl -lcrypt -o xupnpd *.c *.cpp)

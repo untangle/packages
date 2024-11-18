@@ -8,16 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ocserv
-PKG_VERSION:=0.12.1
-PKG_RELEASE:=1
-PKG_USE_MIPS16:=0
+PKG_VERSION:=1.3.0
+PKG_RELEASE:=2
+PKG_BUILD_FLAGS:=no-mips16
 
 PKG_BUILD_DIR :=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=ftp://ftp.infradead.org/pub/ocserv/
-PKG_HASH:=0b7d6f4cd54cf8bf6400a27d202819eec32341225ae48ca73d049f9d17e3a2bc
+PKG_SOURCE_URL:=https://www.infradead.org/ocserv/download/
+PKG_HASH:=5c562c3ea1032065ef43d6075e5722f94ce6a7a780d6a2b4c6d54c1ce3921965
 
-PKG_LICENSE:=GPLv2+
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 #PKG_FIXUP:=autoreconf
 
@@ -39,7 +39,7 @@ define Package/ocserv
   TITLE:=OpenConnect VPN server
   URL:=http://www.infradead.org/ocserv/
   MAINTAINER:=Nikos Mavrogiannopoulos <n.mavrogiannopoulos@gmail.com>
-  DEPENDS:= +OCSERV_RADIUS:libradcli +OCSERV_HTTP_PARSER:libhttp-parser +OCSERV_SECCOMP:libseccomp +libgnutls +certtool +libncurses +libreadline +OCSERV_PAM:libpam +OCSERV_PROTOBUF:libprotobuf-c +libev +kmod-tun
+  DEPENDS:= +OCSERV_RADIUS:libradcli +OCSERV_SECCOMP:libseccomp +libgnutls +certtool +libncurses +libreadline +OCSERV_PAM:libpam +OCSERV_PROTOBUF:libprotobuf-c +OCSERV_LIBOATH:liboath +libev +kmod-tun
   USERID:=ocserv=72:ocserv=72
 endef
 
@@ -55,11 +55,16 @@ endef
 EXTRA_CPPFLAGS+=-I$(STAGING_DIR)/usr/include/readline/
 EXTRA_LDFLAGS+=-lncurses
 
+CONFIGURE_VARS += \
+	ac_cv_file__proc_self_exe=yes \
+	ac_cv_prog_IPCALC=/bin/true
+
 CONFIGURE_ARGS+= \
 	--with-pager="" \
 	--with-libreadline-prefix="$(STAGING_DIR)/" \
 	--without-libnl \
 	--without-gssapi \
+	--without-maxmind \
 	--with-libcrypt-prefix="$(STAGING_DIR)/" \
 	--with-libev-prefix="$(STAGING_DIR)/" \
 	--without-lz4 \
@@ -81,8 +86,8 @@ ifneq ($(CONFIG_OCSERV_PROTOBUF),y)
 CONFIGURE_ARGS += --without-protobuf
 endif
 
-ifneq ($(CONFIG_OCSERV_HTTP_PARSER),y)
-CONFIGURE_ARGS += --without-http-parser
+ifndef CONFIG_OCSERV_LIBOATH
+CONFIGURE_ARGS += --without-liboath
 endif
 
 define Package/ocserv/conffiles
@@ -92,6 +97,7 @@ endef
 define Package/ocserv/install
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ocserv $(1)/usr/sbin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ocserv-worker $(1)/usr/sbin/
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ocserv-fw $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ocpasswd/ocpasswd $(1)/usr/bin/

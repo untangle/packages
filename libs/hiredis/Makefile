@@ -8,23 +8,23 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hiredis
-PKG_VERSION:=0.13.3
+PKG_VERSION:=1.2.0
 PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/redis/hiredis.git
-PKG_SOURCE_VERSION:=010756025e8cefd1bc66c6d4ed3b1648ef6f1f95
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_MIRROR_HASH:=ac774e318215cbfad4b8e493a84b4fe9a03f9882828ea01eac5357f28b5e9cd4
+PKG_SOURCE_URL:=https://codeload.github.com/redis/hiredis/tar.gz/v$(PKG_VERSION)?
+PKG_HASH:=82ad632d31ee05da13b537c124f819eb88e18851d9cb0c30ae0552084811588c
 
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:redis:hiredis
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 
-PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+CMAKE_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/cmake.mk
 
 define Package/libhiredis
 	SECTION:=libs
@@ -35,17 +35,6 @@ endef
 
 define Package/libhiredis/description
 	Hiredis is a minimalistic C client library for the Redis database.
-endef
-
-MAKE_FLAGS += ARCH="" DEBUG="" PREFIX="/usr"
-
-define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/include/hiredis/adapters
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/include/hiredis/adapters/* $(1)/usr/include/hiredis/adapters
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/include/hiredis/*.h $(1)/usr/include/hiredis/
-	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libhiredis.{so*,a} $(1)/usr/lib/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/hiredis.pc $(1)/usr/lib/pkgconfig
 endef
 
 define Package/libhiredis/install

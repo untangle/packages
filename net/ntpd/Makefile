@@ -8,19 +8,22 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ntp
-PKG_VERSION:=4.2.8p11
-PKG_RELEASE:=1
+PKG_REALVERSION:=4.2.8p17
+PKG_VERSION:=$(subst p,_p,$(PKG_REALVERSION))
+PKG_RELEASE:=3
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_REALVERSION).tar.gz
 PKG_SOURCE_URL:=http://www.eecis.udel.edu/~ntp/ntp_spool/ntp4/ntp-4.2/
-PKG_HASH:=f14a39f753688252d683ff907035ffff106ba8d3db21309b742e09b5c3cd278e
+PKG_HASH:=103dd272e6a66c5b8df07dce5e9a02555fcd6f1397bdfb782237328e89d3a866
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_REALVERSION)
 
-PKG_LICENSE:=Unique
+PKG_LICENSE:=NTP
 PKG_LICENSE_FILES:=COPYRIGHT html/copyright.html
+PKG_CPE_ID:=cpe:/a:ntp:ntp
 
-PKG_FIXUP:=autoreconf
 PKG_LIBTOOL_PATHS:=. sntp
 PKG_CHECK_FORMAT_SECURITY:=0
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -67,12 +70,13 @@ endef
 define Package/ntp-utils
 $(call Package/ntpd/Default)
   TITLE+= utilities
+  DEPENDS+= +libevent2-pthreads
 endef
 
 define Package/ntp-utils/description
 $(call Package/ntpd/Default/description)
  .
- This package contains ntpdc, ntpq and ntptime.
+ This package contains ntpdc, ntpq, ntptime and sntp.
 endef
 
 define Package/ntp-keygen
@@ -106,6 +110,7 @@ CONFIGURE_ARGS += \
 	--enable-linuxcaps \
 	--with-yielding-select=yes \
 	--with-crypto \
+	$(if $(CONFIG_PACKAGE_ntp-utils),--with-sntp,--without-sntp) \
 	--with-openssl-incdir="$(STAGING_DIR)/usr/include" \
 	--with-openssl-libdir="$(STAGING_DIR)/usr/lib"
 
@@ -144,6 +149,7 @@ define Package/ntp-utils/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ntpdc/ntpdc $(1)/usr/sbin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ntpq/ntpq $(1)/usr/sbin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/util/ntptime $(1)/usr/sbin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/sntp/sntp $(1)/usr/sbin/
 endef
 
 define Package/ntp-keygen/install

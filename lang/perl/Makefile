@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2016 OpenWrt.org
+# Copyright (C) 2006-2018 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -7,24 +7,20 @@
 
 include $(TOPDIR)/rules.mk
 
+include perlver.mk
+
 PKG_NAME:=perl
-PKG_VERSION:=5.26.2
-PKG_RELEASE:=1
+PKG_VERSION:=$(PERL_VERSION)
+PKG_RELEASE:=2
 
-PKG_SOURCE_URL:=\
-		https://cpan.metacpan.org/src/5.0 \
-		https://cpan.uib.no/src/5.0 \
-		https://mirrors.rit.edu/CPAN/src/5.0 \
-		https://mirror.transip.net/CPAN/src/5.0 \
-		https://mirrors.sonic.net/cpan/src/5.0 \
-		https://www.cpan.org/src/5.0
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_HASH:=0f8c0fb1b0db4681adb75c3ba0dd77a0472b1b359b9e80efd79fc27b4352132c
+PKG_SOURCE_URL:=https://www.cpan.org/src/5.0
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_HASH:=c740348f357396327a9795d3e8323bafd0fe8a5c7835fc1cbaba0cc8dfe7161f
 
-PKG_LICENSE:=GPL-1.0+ Artistic-1.0-Perl
+PKG_LICENSE:=GPL-1.0-or-later Artistic-1.0-Perl
 PKG_LICENSE_FILES:=Copying Artistic README
-PKG_MAINTAINER:=Marcel Denia <naoir@gmx.net>, \
-		Philip Prindeville <philipp@redfish-solutions.com>
+PKG_MAINTAINER:=Marcel Denia <naoir@gmx.net>, Philip Prindeville <philipp@redfish-solutions.com>
+PKG_CPE_ID:=cpe:/a:perl:perl
 
 # Build settings
 PKG_BUILD_DIR:=$(BUILD_DIR)/perl/$(PKG_NAME)-$(PKG_VERSION)
@@ -36,6 +32,10 @@ HOST_BUILD_PARALLEL:=1
 
 # Variables used during configuration/build
 HOST_PERL_PREFIX:=$(STAGING_DIR_HOSTPKG)/usr
+
+ifneq ($(CONFIG_USE_MUSL),)
+  TARGET_CFLAGS += -D_LARGEFILE64_SOURCE
+endif
 
 # Filter -g3, it will break Compress-Raw-Zlib
 TARGET_CFLAGS_PERL:=$(patsubst -g3,-g,$(TARGET_CFLAGS))
@@ -61,7 +61,7 @@ define Package/perl
   CATEGORY:=Languages
   TITLE:=The Perl intepreter
   URL:=http://www.perl.com/
-  DEPENDS:=+USE_GLIBC:libbsd +PERL_THREADS:libpthread
+  DEPENDS:=+USE_GLIBC:libbsd +PERL_THREADS:libpthread @!arc
 endef
 
 define Package/perl/description
@@ -102,6 +102,7 @@ define Build/Configure
 	                                -Dowrt:threads=$(if $(CONFIG_PERL_THREADS),yes,no) \
 	                                -Dowrt:staging_dir='$(STAGING_DIR)' \
 	                                -Dowrt:host_perl_prefix='$(HOST_PERL_PREFIX)' \
+	                                -Dsysroot='$(TOOLCHAIN_ROOT_DIR)' \
 	                                files/version.config \
 	                                files/base.config \
 	                                files/$(patsubst i386,i486,$(ARCH)).config \
@@ -116,13 +117,17 @@ define Build/Configure
 endef
 
 define Build/Compile
+	# make depend is required to avoid race conditions: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=996953
+	+$(MAKE) -C $(PKG_BUILD_DIR) depend
 	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)
 endef
 
+ifeq ($(CONFIG_arc),)
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/lib/perl5/$(PERL_VERSION)
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/perl5/$(PERL_VERSION) $(1)/usr/lib/perl5/
 endef
+endif
 
 define Package/perl/install
 	$(INSTALL_DIR) $(1)/usr/bin

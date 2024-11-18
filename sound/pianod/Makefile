@@ -1,6 +1,4 @@
 #
-# Copyright (C) 2015-2017 Ted Hess <thess@kitschensync.net>
-#
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
@@ -8,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pianod
-PKG_VERSION:=174.07
+PKG_VERSION:=174.11
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=https://github.com/thess/pianod-sc/releases/download/$(PKG_VERSION)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_HASH:=eee969926c095497893fbd28711258a31efb2d2301da87563dbcd101d8771bff
+PKG_HASH:=55e914ce6e3eb753b5a66cc915ffed29ec405c8913d16495a20409c3d73d8e33
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
 
@@ -65,7 +63,7 @@ PIANOD_CLIENT:=pianod-client-compiled-51.tar.gz
 define Download/pianod-client
   URL:=http://deviousfish.com/Downloads/pianod/
   FILE:=$(PIANOD_CLIENT)
-  MD5SUM:=abbdee5627bcee6a00c8304da8b4e2e7
+  HASH:=1596ec2da30992e4008bbd6654333b025165399c3c7e22078f35bee6a438c5ad
 endef
 
 define Package/pianod/conffiles

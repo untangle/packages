@@ -1,9 +1,9 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=inotify-tools
-PKG_VERSION:=3.20.1
-PKG_HASH:=a433cc1dedba851078276db69b0e97f9fe41e4ba3336d2971adfca4b3a6242ac
-PKG_RELEASE:=1
+PKG_VERSION:=4.23.9.0
+PKG_HASH:=1dfa33f80b6797ce2f6c01f454fd486d30be4dca1b0c5c2ea9ba3c30a5c39855
+PKG_RELEASE:=2
 
 PKG_SOURCE_URL:=https://codeload.github.com/rvoicilas/inotify-tools/tar.gz/$(PKG_VERSION)?
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
@@ -16,6 +16,21 @@ PKG_INSTALL:=1
 PKG_FIXUP:=autoreconf
 
 include $(INCLUDE_DIR)/package.mk
+
+CONFIGURE_ARGS+= --disable-doxygen
+
+ifneq ($(CONFIG_USE_MUSL),)
+  TARGET_CFLAGS += -D_LARGEFILE64_SOURCE
+endif
+
+## Avoid linking with libstdcpp
+TARGET_CXXFLAGS+= -nodefaultlibs -lc -fno-exceptions
+TARGET_LDFLAGS+= $(if $(CONFIG_USE_MUSL),-lssp_nonshared)
+
+define Build/Prepare
+	$(call Build/Prepare/Default)
+	$(CP) $(PKG_BUILD_DIR)/README.md $(PKG_BUILD_DIR)/README
+endef
 
 define Package/inotify-tools/Default
   URL:=https://github.com/rvoicilas/inotify-tools/wiki
@@ -85,7 +100,6 @@ define Package/libinotifytools/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.so* $(1)/usr/lib/
 endef
-
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/inotifytools

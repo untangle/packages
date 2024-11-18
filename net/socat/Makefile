@@ -1,6 +1,4 @@
 #
-# Copyright (C) 2006-2015 OpenWrt.org
-#
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
@@ -8,19 +6,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=socat
-PKG_VERSION:=1.7.3.2
+PKG_VERSION:=1.8.0.0
 PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=http://www.dest-unreach.org/socat/download
-PKG_HASH:=e3561f808739383eb10fada1e5d4f26883f0311b34fd0af7837d0c95ef379251
+PKG_HASH:=e1de683dd22ee0e3a6c6bbff269abe18ab0c9d7eb650204f125155b9005faca7
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
-
-PKG_LICENSE:=GPL-2.0 OpenSSL
+PKG_LICENSE:=GPL-2.0-or-later OpenSSL
 PKG_LICENSE_FILES:=COPYING COPYING.OpenSSL
+PKG_CPE_ID:=cpe:/a:dest-unreach:socat
 
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -59,15 +58,30 @@ CONFIGURE_ARGS += \
 	--disable-readline \
 	--enable-termios
 
+## procan.c fails to compile when ccache is enabled
+MAKE_FLAGS += CC="$(TARGET_CC_NOCACHE)"
+
 ifneq ($(CONFIG_SOCAT_SSL),y)
   CONFIGURE_ARGS+= --disable-openssl
 endif
 
+# PowerPC has different TERMIOS bits
+ifneq ($(findstring powerpc,$(CONFIG_ARCH)),)
+  CONFIGURE_VARS += \
+	  sc_cv_sys_crdly_shift=12 \
+	  sc_cv_sys_tabdly_shift=10 \
+	  sc_cv_sys_csize_shift=8
+else
+  CONFIGURE_VARS += \
+	  sc_cv_sys_crdly_shift=9 \
+	  sc_cv_sys_tabdly_shift=11 \
+	  sc_cv_sys_csize_shift=4
+endif
+
 CONFIGURE_VARS += \
 	sc_cv_termios_ispeed="no" \
-	sc_cv_sys_crdly_shift=9 \
-	sc_cv_sys_tabdly_shift=11 \
-	sc_cv_sys_csize_shift=4 \
+	ac_cv_header_bsd_libutil_h=no \
+	ac_cv_lib_bsd_openpty=no \
 	BUILD_DATE=$(SOURCE_DATE_EPOCH)
 
 define Package/socat/install

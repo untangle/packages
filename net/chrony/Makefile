@@ -8,22 +8,24 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=chrony
-PKG_VERSION:=3.3
-PKG_RELEASE:=2
+PKG_VERSION:=4.6.1
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://download.tuxfamily.org/chrony/
-PKG_HASH:=0d1fb2d5875032f2d5a86f3770374c87ee4c941916f64171e81f7684f2a73128
+PKG_SOURCE_URL:=https://chrony-project.org/releases/
+PKG_HASH:=571ff73fbf0ae3097f0604eca2e00b1d8bb2e91affe1a3494785ff21d6199c5c
 
 PKG_MAINTAINER:=Miroslav Lichvar <mlichvar0@gmail.com>
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:tuxfamily:chrony
 
 PKG_BUILD_DEPENDS:=pps-tools
+PKG_BUILD_FLAGS:=lto
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/chrony
+define Package/chrony/Default
   SUBMENU:=Time Synchronization
   SECTION:=net
   CATEGORY:=Network
@@ -31,18 +33,43 @@ define Package/chrony
   USERID:=chrony=323:chrony=323
   TITLE:=A versatile NTP client and server
   URL:=http://chrony.tuxfamily.org/
+  PROVIDES:=nts
+endef
+
+define Package/chrony
+$(call Package/chrony/Default)
+  TITLE+= (without NTS)
+  VARIANT:=normal
+  CONFLICTS:=chrony-nts
+endef
+
+define Package/chrony-nts
+$(call Package/chrony/Default)
+  TITLE+= (with NTS)
+  DEPENDS+= +PACKAGE_chrony-nts:libgnutls +PACKAGE_chrony-nts:ca-bundle
+  VARIANT:=with-nts
 endef
 
 define Package/chrony/description
 	An NTP client and server designed to perform well in a wide range
 	of conditions. It can synchronize the system clock with NTP servers,
 	reference clocks, and manual input using wristwatch and keyboard.
+	This package does NOT include NTS support.
+endef
+
+define Package/chrony-nts/description
+	An NTP client and server designed to perform well in a wide range
+	of conditions. It can synchronize the system clock with NTP servers,
+	reference clocks, and manual input using wristwatch and keyboard.
+	This package includes NTS support.
 endef
 
 define Package/chrony/conffiles
 /etc/chrony/chrony.conf
 /etc/config/chrony
 endef
+
+Package/chrony-nts/conffiles = $(Package/chrony/conffiles)
 
 CONFIGURE_ARGS+= \
 	--host-machine=$(shell echo $(GNU_TARGET_NAME) | sed -e 's/-.*//') \
@@ -51,6 +78,7 @@ CONFIGURE_ARGS+= \
 	--sysconfdir=/etc/chrony \
 	--prefix=/usr \
 	--chronyrundir=/var/run/chrony \
+	$(if $(findstring normal,$(BUILD_VARIANT)),--disable-nts,--enable,nts) \
 	--disable-readline \
 	--disable-rtc \
 	--disable-sechash \
@@ -63,6 +91,7 @@ define Package/chrony/install
 	$(INSTALL_DIR) $(1)/usr/sbin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/chronyd $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/chronyc $(1)/usr/bin
+	$(INSTALL_BIN) ./files/chrony.ntp-hotplug $(1)/usr/sbin/chrony-hotplug
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DIR) $(1)/etc/chrony
@@ -73,4 +102,7 @@ define Package/chrony/install
 	$(INSTALL_CONF) ./files/chrony.conf $(1)/etc/chrony/chrony.conf
 endef
 
+Package/chrony-nts/install= $(Package/chrony/install)
+
 $(eval $(call BuildPackage,chrony))
+$(eval $(call BuildPackage,chrony-nts))

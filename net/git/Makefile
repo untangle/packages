@@ -8,16 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=git
-PKG_VERSION:=2.17.1
-PKG_RELEASE:=1
+PKG_VERSION:=2.46.2
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@KERNEL/software/scm/git/
-PKG_HASH:=79136e7aa83abae4d8a25c8111f113d3c5a63aeb5fd93cc72c26d49c6d5ba65e
+PKG_HASH:=5ee8a1c68536094a4f7f9515edc154b12a275b8a57dda4c21ecfbf1afbae2ca3
 
-PKG_INSTALL:=1
-PKG_BUILD_PARALLEL:=1
+PKG_LICENSE:=GPL-2.0-or-later
+PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:git-scm:git
+
 PKG_FIXUP:=autoreconf
+PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -27,7 +30,7 @@ define Package/git/Default
   CATEGORY:=Network
   SUBMENU:=Version Control Systems
   DEPENDS:=+libopenssl +libpthread +librt +zlib
-  URL:=http://git-scm.com
+  URL:=https://git-scm.com
   MAINTAINER:=Peter Wagner <tripolar@gmx.at>
 endef
 
@@ -44,7 +47,7 @@ endef
 
 define Package/git-http
 $(call Package/git/Default)
-  DEPENDS+= +git +libcurl +ca-certificates
+  DEPENDS+= +git +libcurl
   TITLE:=Git HTTP commands
 endef
 
@@ -57,7 +60,16 @@ endef
 define Package/git-gitweb
 $(call Package/git/Default)
   TITLE:=Git repository web interface
-  DEPENDS+= +git +perlbase-essential +perlbase-file +perlbase-fcntl +perlbase-encode +perlbase-digest +perlbase-time +perl-cgi
+  DEPENDS+=	+git \
+		+perl-cgi \
+		+perlbase-digest \
+		+perlbase-encode \
+		+perlbase-essential \
+		+perlbase-fcntl \
+		+perlbase-file \
+		+perlbase-filetest \
+		+perlbase-storable \
+		+perlbase-time
 endef
 
 define Package/git-gitweb/description
@@ -85,13 +97,15 @@ MAKE_FLAGS := \
 	NO_TCLTK="YesPlease" \
 	NO_INSTALL_HARDLINKS="yes" \
 	gitwebdir="/www/cgi-bin" \
-	GITWEB_JS="/gitweb/gitweb.js" \
-	GITWEB_CSS="/gitweb/gitweb.css" \
-	GITWEB_LOGO="/gitweb/gitweb-logo.png" \
-	GITWEB_FAVICON="/gitweb/gitweb-favicon.png"
+	uname_S="Linux" \
 
 CONFIGURE_ARGS += \
 	--without-iconv \
+
+CONFIGURE_VARS += \
+	ac_cv_fread_reads_directories=yes \
+	ac_cv_snprintf_returns_bogus=yes \
+	ac_cv_sane_mode_bits=no
 
 define Build/Configure
 	$(MAKE) -C $(PKG_BUILD_DIR) \
@@ -106,14 +120,11 @@ define Build/Compile
 endef
 
 define Package/git/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(CP) $(PKG_INSTALL_DIR)/usr/bin/git $(1)/usr/bin
 	$(RM) $(PKG_INSTALL_DIR)/usr/bin/git-cvsserver
+	$(RM) $(PKG_INSTALL_DIR)/usr/bin/git-shell
+	$(INSTALL_DIR) $(1)/usr/bin
 	$(CP) $(PKG_INSTALL_DIR)/usr/bin/git-* $(1)/usr/bin
 	$(INSTALL_DIR) $(1)/usr/lib/git-core
-	ln $(1)/usr/bin/git $(1)/usr/lib/git-core/git
-	ln $(1)/usr/bin/git-shell $(1)/usr/lib/git-core/git-shell
-	ln $(1)/usr/bin/git-upload-pack $(1)/usr/lib/git-core/git-upload-pack
 	$(INSTALL_DIR) $(1)/usr/share/git-core/templates
 	( cd $(PKG_INSTALL_DIR); $(TAR) \
 		--exclude=usr/lib/git-core/git-http-backend \
@@ -122,13 +133,12 @@ define Package/git/install
 		--exclude=usr/lib/git-core/git-remote-ftps \
 		--exclude=usr/lib/git-core/git-remote-http \
 		--exclude=usr/lib/git-core/git-remote-https \
-		--exclude=usr/lib/git-core/git \
-		--exclude=usr/lib/git-core/git-shell \
-		--exclude=usr/lib/git-core/git-upload-pack \
 		-cf - \
 		usr/lib/git-core \
 		usr/share/git-core/templates \
 	) | ( cd $(1); $(TAR) -xf - )
+	$(LN) ../lib/git-core/git $(1)/usr/bin/git
+	$(LN) ../lib/git-core/git-shell $(1)/usr/bin/git-shell
 endef
 
 define Package/git-http/install
@@ -144,6 +154,11 @@ endef
 define Package/git-gitweb/install
 	$(INSTALL_DIR) $(1)/www/cgi-bin $(1)/www/gitweb
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/www/cgi-bin/gitweb.cgi $(1)/www/cgi-bin/
+	# work around https://lore.kernel.org/git/80eb3972-4960-5727-ce86-acc3a4425fd4@nic.cz/T/#u
+	$(SED) 's,^our @stylesheets .*,our @stylesheets = ("/gitweb/gitweb.css");,' $(1)/www/cgi-bin/gitweb.cgi
+	$(SED) 's,^our $$$$logo .*,our $$$$logo = "/gitweb/git-logo.png";,' $(1)/www/cgi-bin/gitweb.cgi
+	$(SED) 's,^our $$$$favicon .*,our $$$$favicon = "/gitweb/git-favicon.png";,' $(1)/www/cgi-bin/gitweb.cgi
+	$(SED) 's,^our $$$$javascript .*,our $$$$javascript = "/gitweb/gitweb.js";,' $(1)/www/cgi-bin/gitweb.cgi
 	$(CP) $(PKG_INSTALL_DIR)/www/cgi-bin/static/* $(1)/www/gitweb/
 endef
 

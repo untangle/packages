@@ -8,41 +8,36 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-urllib3
-PKG_VERSION:=1.22
+PKG_VERSION:=2.0.4
 PKG_RELEASE:=1
+
+PKG_MAINTAINER:=Josef Schlehofer <pepe.schlehofer@gmail.com>
 PKG_LICENSE:=MIT
+PKG_LICENSE_FILES:=LICENSE.txt
+PKG_CPE_ID:=cpe:/a:python:urllib3
 
-PKG_SOURCE:=urllib3-$(PKG_VERSION).tar.gz
-PKG_BUILD_DIR:=$(BUILD_DIR)/urllib3-$(PKG_VERSION)/
-PKG_SOURCE_URL:=https://pypi.python.org/packages/ee/11/7c59620aceedcc1ef65e156cc5ce5a24ef87be4107c2b74458464e437a5d/
-PKG_HASH:=cc44da8e1145637334317feebd728bd869a35285b93cbb4cca2577da7e62db4f
+PYPI_NAME:=urllib3
+PKG_HASH:=8d22f86aae8ef5e410d4f539fde9ce6b2113a001bb4d189e0aed70642d602b11
 
+PKG_BUILD_DEPENDS:=python-hatchling/host
+
+include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
-include ../python-package.mk
+include ../python3-package.mk
 
-define Package/python-urllib3
+define Package/python3-urllib3
   SUBMENU:=Python
   SECTION:=lang
   CATEGORY:=Languages
-  MAINTAINER:=Gergely Kiss <mail.gery@gmail.com>
-  TITLE:=HTTP library with thread-safe connection pooling, file post, and more.
+  TITLE:=Sanity-friendly HTTP client
   URL:=https://urllib3.readthedocs.io/
-  DEPENDS:=+python
+  DEPENDS:=+python3
 endef
 
-define Package/python-urllib3/description
+define Package/python3-urllib3/description
   HTTP library with thread-safe connection pooling, file post, and more.
 endef
 
-define Build/Compile
-	$(call Build/Compile/PyMod,,install --prefix=/usr --root=$(PKG_INSTALL_DIR))
-endef
-
-define Package/python-urllib3/install
-	$(INSTALL_DIR) $(1)$(PYTHON_PKG_DIR)
-	$(CP) \
-	    $(PKG_INSTALL_DIR)$(PYTHON_PKG_DIR)/* \
-	    $(1)$(PYTHON_PKG_DIR)
-endef
-
-$(eval $(call BuildPackage,python-urllib3))
+$(eval $(call Py3Package,python3-urllib3))
+$(eval $(call BuildPackage,python3-urllib3))
+$(eval $(call BuildPackage,python3-urllib3-src))

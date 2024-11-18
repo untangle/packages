@@ -8,18 +8,22 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=irssi
-PKG_VERSION:=1.1.1
+PKG_VERSION:=1.4.5
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=https://github.com/irssi/irssi/releases/download/1.1.1/
-PKG_HASH:=784807e7a1ba25212347f03e4287cff9d0659f076edfb2c6b20928021d75a1bf
+PKG_SOURCE_URL:=https://github.com/irssi/irssi/releases/download/$(PKG_VERSION)/
+PKG_HASH:=72a951cb0ad622785a8962801f005a3a412736c7e7e3ce152f176287c52fe062
 
-PKG_FIXUP:=autoreconf
+PKG_LICENSE:=GPL-2.0-or-later
+PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:irssi:irssi
+
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
+include $(INCLUDE_DIR)/meson.mk
 
 define Package/irssi
   SUBMENU:=Instant Messaging
@@ -35,16 +39,14 @@ define Package/irssi/description
 	Irssi is a terminal based IRC client for UNIX systems.
 endef
 
-CONFIGURE_ARGS += \
-	--with-perl=no \
-	--with-glib-prefix="$(STAGING_DIR)/usr" \
-	--with-ssl="$(STAGING_DIR)/usr" \
-	--with-textui \
-	--without-bot \
-	--disable-proxy
+TARGET_LDFLAGS += -Wl,--gc-sections
 
-EXTRA_CFLAGS+=$(TARGET_CPPFLAGS)
-EXTRA_LDFLAGS+=-lncurses
+MESON_ARGS += \
+	-Dwithout-textui=no \
+	-Dwith-bot=no \
+	-Dwith-otr=no \
+	-Dwith-perl=no \
+	-Dwith-proxy=no \
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/irssi

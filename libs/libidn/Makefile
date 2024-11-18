@@ -8,17 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libidn
-PKG_VERSION:=1.35
+PKG_VERSION:=1.42
 PKG_RELEASE:=1
-PKG_MAINTAINER:=Kevin Darbyshire-Bryant <kevin@darbyshire-bryant.me.uk>
+
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@GNU/libidn
-PKG_HASH:=f11af1005b46b7b15d057d7f107315a1ad46935c7fcdf243c16e46ec14f0fe1e
+PKG_HASH:=d6c199dcd806e4fe279360cb4b08349a0d39560ed548ffd1ccadda8cdecb4723
 
-PKG_LICENSE:=GPL-2.0+ GPL-3.0+ LGPL-2.1+ LGPL-3.0+ Apache-2.0
+PKG_MAINTAINER:=
+PKG_LICENSE:=GPL-2.0-or-later GPL-3.0-or-later LGPL-2.1-or-later LGPL-3.0-or-later Apache-2.0
 PKG_LICENSE_FILES:=COPYING COPYINGv2 COPYINGv3 COPYING.LESSERv2 COPYING.LESSERv3 java/LICENSE-2.0.txt
+PKG_CPE_ID:=cpe:/a:gnu:libidn
 
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 

@@ -8,25 +8,25 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=upmpdcli
-PKG_VERSION:=1.1.3
-PKG_RELEASE:=2
+PKG_VERSION:=1.8.11
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://www.lesbonscomptes.com/upmpdcli/downloads
-PKG_HASH:=2df3e6593f18c097b6247fb8da919b94701bf083b219056b006d68e6dcef75b5
-PKG_MAINTAINER:=Petko Bordjukov <bordjukov@gmail.com>
-PKG_LICENSE:=GPL-2.0
+PKG_SOURCE_URL:=https://www.lesbonscomptes.com/upmpdcli/downloads
+PKG_HASH:=d715120b869382ea701f07baa604c77b7895537e0655e1ed4dfa68d986d6a59f
+
+PKG_MAINTAINER:=
+PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
 
-PKG_INSTALL:=1
-
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/meson.mk
 
 define Package/upmpdcli
   SECTION:=sound
   CATEGORY:=Sound
-  URL:=http://www.lesbonscomptes.com/upmpdcli
-  DEPENDS+= +libupnpp +libmpdclient
+  URL:=https://www.lesbonscomptes.com/upmpdcli
+  DEPENDS:=+libupnpp +libmpdclient +jsoncpp
   TITLE:=A UPnP front-end to MPD, the Music Player Daemon
   USERID:=upmpdcli=89:upmpdcli=89
   MENU:=1
@@ -38,6 +38,10 @@ endef
 
 define Package/upmpdcli/config
 	source "$(SOURCE)/Config.in"
+endef
+
+define Package/upmpdcli/conffiles
+/etc/config/upmpdcli
 endef
 
 define Package/upmpdcli/install

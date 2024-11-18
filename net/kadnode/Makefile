@@ -2,18 +2,19 @@ include $(TOPDIR)/rules.mk
 
 
 PKG_NAME:=kadnode
-PKG_VERSION:=2.2.3
+PKG_VERSION:=2.4.0
 PKG_RELEASE:=1
 
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/mwarning/KadNode
+PKG_SOURCE_VERSION:=v$(PKG_VERSION)
+PKG_MIRROR_HASH:=9e5f503785f5f894f951c747c00586233b75254e91d2555f83b14ee2f07214c9
+
+PKG_MAINTAINER:=Moritz Warning <moritzwarning@web.de>
 PKG_LICENSE:=MIT
 
-PKG_SOURCE_URL:=https://codeload.github.com/mwarning/KadNode/tar.gz/v$(PKG_VERSION)?
-PKG_SOURCE:=kadnode-$(PKG_VERSION).tar.gz
-PKG_HASH:=1f5538a4b904fd2a624a2046f9320f72357af619190188f14bfdb15b5e5f8488
-PKG_BUILD_DIR:=$(BUILD_DIR)/KadNode-$(PKG_VERSION)
-
-
 PKG_BUILD_PARALLEL:=1
+PKG_BUILD_FLAGS:=gc-sections
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -25,7 +26,6 @@ define Package/kadnode
 	URL:=https://github.com/mwarning/KadNode
 	MENU:=1
 	DEPENDS:=+KADNODE_ENABLE_BOB:libmbedtls +KADNODE_ENABLE_TLS:libmbedtls +KADNODE_ENABLE_UPNP:libminiupnpc +KADNODE_ENABLE_NATPMP:libnatpmp
-	MAINTAINER:=Moritz Warning <moritzwarning@web.de>
 endef
 
 define Package/kadnode/description
@@ -72,15 +72,15 @@ endif
 
 MAKE_FLAGS += FEATURES="$(FEATURES)"
 
-# Make binary smaller
-TARGET_CFLAGS += -ffunction-sections -fdata-sections
-TARGET_LDFLAGS += -Wl,--gc-sections
+define Package/kadnode/conffiles
+/etc/config/kadnode
+endef
 
 define Package/kadnode/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/build/kadnode $(1)/usr/bin/
 ifeq ($(CONFIG_KADNODE_ENABLE_CMD),y)
-	$(LN) /usr/bin/kadnode $(1)/usr/bin/kadnode-ctl
+	$(LN) kadnode $(1)/usr/bin/kadnode-ctl
 endif
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) files/kadnode.init $(1)/etc/init.d/kadnode

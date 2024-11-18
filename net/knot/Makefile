@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014-2018 CZ.NIC, z.s.p.o. <knot-dns@labs.nic.cz>
+# Copyright (C) 2014-2021 CZ.NIC, z.s.p.o. <knot-dns@labs.nic.cz>
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,17 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=knot
-PKG_VERSION:=2.6.7
+PKG_VERSION:=3.4.2
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://secure.nic.cz/files/knot-dns/
-PKG_HASH:=1c2a004b05c161f7b36d5eeccebd9d4cdf60aa09930a7cc766514e468ca92243
+PKG_HASH:=d835285c1057d45effa1479cfe1f107a50e83d11c1c6d36f270deda88799883e
 
 PKG_MAINTAINER:=Daniel Salzman <daniel.salzman@nic.cz>
-PKG_LICENSE:=GPL-3.0 LGPL-2.0 0BSD MIT OLDAP-2.8
+PKG_LICENSE:=GPL-3.0 LGPL-2.0 0BSD BSD-3-Clause OLDAP-2.8
+PKG_CPE_ID:=cpe:/a:knot-dns:knot_dns
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 
@@ -30,6 +30,7 @@ define Package/knot-lib/Default
 	TITLE:=Knot DNS
 	DEPENDS=+libpthread
 	URL:=https://www.knot-dns.cz
+	VERSION:=${PKG_VERSION}-r${PKG_RELEASE}
 endef
 
 define Package/knot/Default
@@ -39,25 +40,27 @@ define Package/knot/Default
 	TITLE:=Knot DNS
 	DEPENDS=+libatomic
 	URL:=https://www.knot-dns.cz
+	VERSION:=${PKG_VERSION}-r${PKG_RELEASE}
 endef
 
 define Package/knot-libs
 	$(call Package/knot-lib/Default)
 	TITLE+= common DNS and DNSSEC libraries
-	DEPENDS+=+libgnutls
+	DEPENDS+=+libgnutls +lmdb @!arc
 endef
 
 define Package/knot-libzscanner
 	$(call Package/knot-lib/Default)
 	TITLE+= zone parser library
+	DEPENDS+=@!arc
 endef
 
 define Package/knot
 	$(call Package/knot/Default)
 	TITLE+= server with control utility
-	DEPENDS+=+libedit +liburcu +knot-libs +knot-libzscanner
-	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-$(PKG_RELEASE)), \
-	               knot-libzscanner (=$(PKG_VERSION)-$(PKG_RELEASE))
+	DEPENDS+=+libedit +liburcu +libdbus +knot-libs +knot-libzscanner
+	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-r$(PKG_RELEASE)), \
+	               knot-libzscanner (=$(PKG_VERSION)-r$(PKG_RELEASE))
 	USERID:=knot=5353:knot=5353
 endef
 
@@ -65,46 +68,46 @@ define Package/knot-dig
 	$(call Package/knot/Default)
 	TITLE+= advanced DNS lookup utility
 	DEPENDS+=+libedit +knot-libs
-	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-$(PKG_RELEASE))
+	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-r$(PKG_RELEASE))
 endef
 
 define Package/knot-host
 	$(call Package/knot/Default)
 	TITLE+= simple DNS lookup utility
 	DEPENDS+=+libedit +knot-libs
-	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-$(PKG_RELEASE))
+	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-r$(PKG_RELEASE))
 endef
 
 define Package/knot-nsupdate
 	$(call Package/knot/Default)
 	TITLE+= dynamic DNS update utility
 	DEPENDS+=+libedit +knot-libs +knot-libzscanner
-	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-$(PKG_RELEASE)), \
-	               knot-libzscanner (=$(PKG_VERSION)-$(PKG_RELEASE))
+	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-r$(PKG_RELEASE)), \
+	               knot-libzscanner (=$(PKG_VERSION)-r$(PKG_RELEASE))
 endef
 
 define Package/knot-zonecheck
 	$(call Package/knot/Default)
 	TITLE+= zonefile check utility
-	DEPENDS+=+libedit +liburcu +knot-libs +knot-libzscanner
-	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-$(PKG_RELEASE)), \
-	               knot-libzscanner (=$(PKG_VERSION)-$(PKG_RELEASE))
+	DEPENDS+=+libedit +liburcu +libdbus +knot-libs +knot-libzscanner
+	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-r$(PKG_RELEASE)), \
+	               knot-libzscanner (=$(PKG_VERSION)-r$(PKG_RELEASE))
 endef
 
 define Package/knot-keymgr
 	$(call Package/knot/Default)
 	TITLE+= DNSSEC key management utility
-	DEPENDS+=+libedit +liburcu +knot-libs +knot-libzscanner
-	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-$(PKG_RELEASE)), \
-	               knot-libzscanner (=$(PKG_VERSION)-$(PKG_RELEASE))
+	DEPENDS+=+libedit +liburcu +libdbus +knot-libs +knot-libzscanner
+	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-r$(PKG_RELEASE)), \
+	               knot-libzscanner (=$(PKG_VERSION)-r$(PKG_RELEASE))
 endef
 
 define Package/knot-tests
 	$(call Package/knot/Default)
 	TITLE+= tests
-	DEPENDS+=+libedit +liburcu +knot-libs +knot-libzscanner
-	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-$(PKG_RELEASE)), \
-	               knot-libzscanner (=$(PKG_VERSION)-$(PKG_RELEASE))
+	DEPENDS+=+libedit +liburcu +libdbus +knot-libs +knot-libzscanner
+	EXTRA_DEPENDS:=knot-libs (=$(PKG_VERSION)-r$(PKG_RELEASE)), \
+	               knot-libzscanner (=$(PKG_VERSION)-r$(PKG_RELEASE))
 endef
 
 define Package/knot-libs/description
@@ -144,16 +147,24 @@ define Package/knot-tests/description
 	Usage: /usr/share/knot/runtests.sh
 endef
 
+export KNOT_VERSION_FORMAT=release
+
 CONFIGURE_ARGS += 			\
 	--enable-recvmmsg=no		\
+	--enable-cap-ng=no            	\
+	--enable-xdp=no                 \
+	--enable-maxminddb=no		\
+	--enable-dbus=libdbus           \
+	--enable-quic			\
 	--disable-fastparser		\
 	--without-libidn		\
+	--with-libnghttp2=no		\
 	--with-rundir=/var/run/knot	\
 	--with-storage=/var/lib/knot	\
 	--with-configdir=/etc/knot	\
 	--with-conf-mapsize=20
 
-TARGET_CFLAGS += -DPSELECT_COMPAT -DNDEBUG
+TARGET_CFLAGS += -DNDEBUG
 
 define Package/knot/conffiles
 /etc/knot/knot.conf
@@ -161,12 +172,10 @@ endef
 
 define Build/Compile
 	$(MAKE) -C $(PKG_BUILD_DIR)
-	$(MAKE) -C $(PKG_BUILD_DIR)/libtap check
-	$(MAKE) -C $(PKG_BUILD_DIR)/src/dnssec/tests check-compile
 	$(MAKE) -C $(PKG_BUILD_DIR)/tests check-compile
-	$(MAKE) -C $(PKG_BUILD_DIR)/src/zscanner check-compile
 endef
 
+ifneq ($(CONFIG_arc),y)
 define Build/InstallDev
 	$(INSTALL_DIR)					$(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.{a,so*}	$(1)/usr/lib/
@@ -174,15 +183,16 @@ define Build/InstallDev
 	$(INSTALL_DIR)						$(1)/usr/include/libknot
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/libknot/*		$(1)/usr/include/libknot/
 
-	$(INSTALL_DIR)						$(1)/usr/include/dnssec
-	$(CP) $(PKG_INSTALL_DIR)/usr/include/dnssec/*		$(1)/usr/include/dnssec/
+	$(INSTALL_DIR)						$(1)/usr/include/libdnssec
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/libdnssec/*	$(1)/usr/include/libdnssec/
 
-	$(INSTALL_DIR)						$(1)/usr/include/zscanner
-	$(CP) $(PKG_INSTALL_DIR)/usr/include/zscanner/*		$(1)/usr/include/zscanner/
+	$(INSTALL_DIR)						$(1)/usr/include/libzscanner
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/libzscanner/*	$(1)/usr/include/libzscanner/
 
 	$(INSTALL_DIR)							$(1)/usr/lib/pkgconfig
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/*.pc	$(1)/usr/lib/pkgconfig/
 endef
+endif
 
 define Package/knot-libs/install
 	$(INSTALL_DIR) 						$(1)/usr/lib
@@ -237,30 +247,22 @@ define Package/knot-tests/install
 	$(INSTALL_DIR) 						$(1)/usr/share/knot
 	$(INSTALL_BIN) ./files/runtests.sh			$(1)/usr/share/knot/
 
-	$(INSTALL_DIR) 						$(1)/usr/share/knot/tap
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libtap/runtests		$(1)/usr/share/knot/tap/
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libtap/tap/libtap.sh	$(1)/usr/share/knot/tap/
+	$(INSTALL_DIR) 							$(1)/usr/share/knot/tap
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tests/tap/.libs/runtests	$(1)/usr/share/knot/tap/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tests/tap/libtap.sh		$(1)/usr/share/knot/tap/
 
 	$(INSTALL_DIR)								$(1)/usr/share/knot/tests
 
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/zscanner/tests/.libs/zscanner-tool	$(1)/usr/share/knot/tests/
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/zscanner/tests/unittests		$(1)/usr/share/knot/tests/test_zscanner
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/zscanner/tests/TESTS		$(1)/usr/share/knot/tests/
-	cp -a $(PKG_BUILD_DIR)/src/zscanner/tests/data				$(1)/usr/share/knot/tests/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tests/libzscanner/.libs/zscanner-tool	$(1)/usr/share/knot/tests/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tests/libzscanner/test_zscanner		$(1)/usr/share/knot/tests/
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/tests/libzscanner/TESTS		$(1)/usr/share/knot/tests/
+	cp -a $(PKG_BUILD_DIR)/tests/libzscanner/data				$(1)/usr/share/knot/tests/
 
-	find $(PKG_BUILD_DIR)/src/dnssec/tests -maxdepth 1 -executable -type f | \
-		xargs -I{} basename {} | \
-		xargs -I{} $(INSTALL_BIN) -T $(PKG_BUILD_DIR)/src/dnssec/tests/{}	$(1)/usr/share/knot/tests/dnssec_test_{}
-
-	find $(PKG_BUILD_DIR)/tests/.libs -maxdepth 1 -executable -type f | \
-		xargs -I{} basename {} | \
-		xargs -I{} $(INSTALL_BIN) -T $(PKG_BUILD_DIR)/tests/.libs/{}		$(1)/usr/share/knot/tests/{}
-
-	for module in contrib libknot modules utils; do \
+	for module in contrib knot libdnssec libknot modules utils; do \
 		find $(PKG_BUILD_DIR)/tests/$$$${module}/.libs -maxdepth 1 -executable -type f | \
 			xargs -I{} basename {} | \
 			xargs -I{} $(INSTALL_BIN) -T $(PKG_BUILD_DIR)/tests/$$$${module}/.libs/{} \
-											$(1)/usr/share/knot/tests/$$$${module}_{}; \
+										$(1)/usr/share/knot/tests/$$$${module}_{}; \
 	done
 endef
 

@@ -8,28 +8,26 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libplist
-PKG_VERSION:=2.0.0
-PKG_RELEASE:=3
+PKG_VERSION:=2.4.0
+PKG_RELEASE:=1
 
-PKG_MAINTAINER:=Lukasz Baj <l.baj@radytek.com>
-PKG_LICENSE:=LGPL-2.1+
-PKG_LICENSE_FILES:=COPYING.LESSER
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
+PKG_SOURCE_URL:=https://github.com/libimobiledevice/libplist/releases/download/$(PKG_VERSION)
+PKG_HASH:=3f5868ae15b117320c1ff5e71be53d29469d4696c4085f89db1975705781a7cd
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/libimobiledevice/libplist.git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=62ec804736435fa34e37e66e228e17e2aacee1d7
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_HASH:=0b6a7656b431f78b0f11370938e577bc16f30d2255ad675bf4b63a96876fb290
+PKG_MAINTAINER:=Rosen Penev <rosenp@gmail.com>
+PKG_CPE_ID:=cpe:/a:libimobiledevice:libplist
 
-PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
+PKG_BUILD_FLAGS:=lto
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/libplist/Default
   TITLE:=Apple property list
-  URL:=http://www.libimobiledevice.org/
+  URL:=https://www.libimobiledevice.org/
+  SUBMENU:=libimobiledevice
 endef
 
 define Package/libplist/Default/description
@@ -42,67 +40,54 @@ define Package/libplist
   CATEGORY:=Libraries
   DEPENDS:=+libxml2
   TITLE+= library
+  PKG_LICENSE:=LGPL-2.1-or-later
+  PKG_LICENSE_FILES:=COPYING.LESSER
 endef
 
 define Package/libplist/description
   $(call Package/libplist/Default/description)
 endef
 
-define Package/libplistcxx
-  $(call Package/libplist/Default)
-  SECTION:=libs
-  CATEGORY:=Libraries
-  DEPENDS:=+libplist +libstdcpp
-  TITLE+= C++ library
-endef
-
-define Package/libplistcxx/description
-  $(call Package/libplist/Default/description)
-  This package contains the libplist C++ shared library.
-endef
-
-define Package/libplist-utils
+define Package/plistutil
   $(call Package/libplist/Default)
   SECTION:=utils
   CATEGORY:=Utilities
   DEPENDS:=+libplist
   TITLE+= converter
+  LICENSE:=GPL-2.0-or-later
+  LICENSE_FILES:=COPYING
 endef
 
-define Package/libplist-utils/description
+define Package/plistutil/description
   $(call Package/libplist/Default/description)
   This package contains the libplist utilities.
 endef
 
 CONFIGURE_ARGS += \
+	--disable-static \
 	--without-cython
 
-TARGET_LDFLAGS += -lz
+TARGET_LDFLAGS += -Wl,--gc-sections
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/plist $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libplist*.so* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libplist-2.0*.so* $(1)/usr/lib/
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libplist*.pc $(1)/usr/lib/pkgconfig/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libplist-2.0.pc $(1)/usr/lib/pkgconfig/
+	$(LN) libplist-2.0.pc $(1)/usr/lib/pkgconfig/libplist.pc
 endef
 
 define Package/libplist/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libplist.so.* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libplist-2.0.so.* $(1)/usr/lib/
 endef
 
-define Package/libplistcxx/install
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libplist++.so.* $(1)/usr/lib/
-endef
-
-define Package/libplist-utils/install
+define Package/plistutil/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(CP) $(PKG_INSTALL_DIR)/usr/bin/plistutil $(1)/usr/bin/
 endef
 
 $(eval $(call BuildPackage,libplist))
-$(eval $(call BuildPackage,libplistcxx))
-$(eval $(call BuildPackage,libplist-utils))
+$(eval $(call BuildPackage,plistutil))

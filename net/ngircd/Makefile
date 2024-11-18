@@ -8,21 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ngircd
-PKG_VERSION:=24
+PKG_VERSION:=26.1
 PKG_RELEASE:=1
-PKG_MAINTAINER:=Claudio Leite <leitec@staticky.com>
+
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=https://ngircd.barton.de/pub/ngircd
+PKG_HASH:=55c16fd26009f6fc6a007df4efac87a02e122f680612cda1ce26e17a18d86254
+
+PKG_MAINTAINER:=
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:ngircd:ngircd
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:= \
-        http://ngircd.barton.de/pub/ngircd/ \
-        ftp://ftp.berlios.de/pub/ngircd/
-PKG_HASH:=3e00a7da52c81fc1e02bb996a27bf43da905ba7037bf8c6bb3bd13321e0c85ab
-
+PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -32,7 +31,7 @@ define Package/ngircd/Default
   SUBMENU:=Instant Messaging
   DEPENDS:=+zlib
   TITLE:=Next Generation IRC Server
-  URL:=http://ngircd.barton.de
+  URL:=https://ngircd.barton.de
 endef
 
 define Package/ngircd/Default/description

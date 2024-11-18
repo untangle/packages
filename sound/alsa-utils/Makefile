@@ -8,24 +8,30 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=alsa-utils
-PKG_VERSION:=1.1.6
-PKG_RELEASE:=2
+PKG_VERSION:=1.2.11
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_SOURCE_URL:=ftp://ftp.alsa-project.org/pub/utils/ \
-		http://distfiles.gentoo.org/distfiles/
-PKG_HASH:=155caecc40b2220f686f34ba3655a53e3bdbc0586adb1056733949feaaf7d36e
-PKG_INSTALL:=1
+PKG_SOURCE_URL:=https://www.alsa-project.org/files/pub/utils/ \
+		https://distfiles.gentoo.org/distfiles/
+PKG_HASH:=9ac6ca3a883f151e568dcf979b8d2e5cbecc51b819bb0e6bb8a2e9b34cc428a7
+
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
+PKG_LICENSE:=GPL-2.0-or-later
+PKG_LICENSE_FILES:=COPYING
+
+PKG_FIXUP:=autoreconf
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/alsa-utils
   SECTION:=sound
   CATEGORY:=Sound
-  DEPENDS:=+alsa-lib +libncursesw +libpthread
+  DEPENDS:=+alsa-lib +alsa-ucm-conf +libncursesw +libpthread
   TITLE:=ALSA (Advanced Linux Sound Architecture) utilities
-  URL:=http://www.alsa-project.org/
+  URL:=https://www.alsa-project.org/
 endef
 
 define Package/alsa-utils-seq
@@ -33,7 +39,7 @@ define Package/alsa-utils-seq
   CATEGORY:=Sound
   DEPENDS:=+alsa-lib +libpthread
   TITLE:=ALSA sequencer utilities
-  URL:=http://www.alsa-project.org/
+  URL:=https://www.alsa-project.org/
 endef
 
 define Package/alsa-utils-tests
@@ -41,16 +47,21 @@ define Package/alsa-utils-tests
   CATEGORY:=Sound
   TITLE:=ALSA utilities test data (adds ~1.3M to image)
   DEPENDS:=+alsa-lib +libpthread
-  URL:=http://www.alsa-project.org/
+  URL:=https://www.alsa-project.org/
 endef
 
-CONFIGURE_ARGS+= \
-		--disable-rpath \
-		--disable-alsatest \
-		--disable-bat \
-		--disable-xmlto \
-		--disable-rst2man \
-		--with-curses=ncursesw
+CONFIGURE_ARGS += \
+	--disable-rpath \
+	--disable-alsatest \
+	--disable-bat \
+	--disable-xmlto \
+	--disable-rst2man \
+	--with-curses=ncursesw
+
+CONFIGURE_VARS += \
+	ac_cv_header_samplerate_h=no
+
+TARGET_LDFLAGS += -latopology
 
 define Package/alsa-utils/install
 	$(INSTALL_DIR) $(1)/usr/{s,}bin

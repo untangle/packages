@@ -8,21 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libfastjson
-PKG_VERSION:=0.99.2
-PKG_RELEASE:=2
+PKG_VERSION:=1.2304.0
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_MIRROR_HASH:=66676a4c8de8c5399dfe1cfd064d140afca58e3d8187bae0a3dccdf83165d9d1
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_URL:=https://github.com/rsyslog/libfastjson.git
-PKG_SOURCE_VERSION:=v$(PKG_VERSION)
+PKG_SOURCE_URL:=https://download.rsyslog.com/libfastjson
+PKG_HASH:=ef30d1e57a18ec770f90056aaac77300270c6203bbe476f4181cc83a2d5dc80c
 
 PKG_MAINTAINER:=Dov Murik <dmurik@us.ibm.com>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:rsyslog:libfastjson
 
-PKG_FIXUP:=autoreconf
+PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk

@@ -8,22 +8,22 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=krb5
-PKG_VERSION:=1.16
-PKG_RELEASE:=3
+PKG_VERSION:=1.21.3
+PKG_RELEASE:=1
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=NOTICE
+PKG_CPE_ID:=cpe:/a:mit:kerberos_5
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://web.mit.edu/kerberos/dist/krb5/1.16/
-PKG_HASH:=faeb125f83b0fb4cdb2f99f088140631bb47d975982de0956d18c85842969e08
+PKG_SOURCE_URL:=https://web.mit.edu/kerberos/dist/krb5/1.21
+PKG_HASH:=b7a4cd5ead67fb08b980b21abd150ff7217e85ea320c9ed0c6dadd304840ad35
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
-PKG_CHECK_FORMAT_SECURITY:=0
-PKG_USE_MIPS16:=0
+PKG_BUILD_FLAGS:=no-mips16
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -33,7 +33,7 @@ define Package/krb5/Default
 	SECTION:=net
 	CATEGORY:=Network
 	TITLE:=Kerberos
-	URL:=http://web.mit.edu/kerberos/
+	URL:=https://web.mit.edu/kerberos/
 endef
 
 define Package/krb5-libs
@@ -49,6 +49,12 @@ define Package/krb5-server
 	$(call Package/krb5/Default)
 	DEPENDS:=+krb5-libs +libpthread
 	TITLE:=Kerberos 5 Server
+endef
+
+define Package/krb5-server-extras
+	$(call Package/krb5/Default)
+	DEPENDS:=+krb5-libs +libpthread
+	TITLE:=Kerberos 5 Admin Server
 endef
 
 define Package/krb5-client
@@ -71,7 +77,8 @@ CONFIGURE_VARS += \
 	ac_cv_func_regcomp=yes \
 	ac_cv_printf_positional=yes \
 	ac_cv_file__etc_environment=no \
-	ac_cv_file__etc_TIMEZONE=no
+	ac_cv_file__etc_TIMEZONE=no \
+	ac_cv_header_keyutils_h=no
 
 CONFIGURE_ARGS += \
 	--localstatedir=/etc \
@@ -95,6 +102,9 @@ define Build/InstallDev
 	# needed for samba4, to detect system-krb5
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/krb5-config $(1)/usr/bin
+	$(SED) 's,^\(prefix\|exec_prefix\)=.*,\1=$(STAGING_DIR)/usr,g' $(1)/usr/bin/krb5-config
+	$(INSTALL_DIR) $(2)/bin
+	$(LN) ../../usr/bin/krb5-config $(2)/bin/krb5-config
 endef
 
 define Package/krb5-libs/install
@@ -124,18 +134,25 @@ endef
 define Package/krb5-server/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/krb5kdc $(1)/etc/init.d/krb5kdc
-#	$(INSTALL_DIR) $(1)/usr/bin
-#	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/sclient $(1)/usr/bin
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/kadmin.local $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/kadmind $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/kdb5_util $(1)/usr/sbin
-#	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/kprop $(1)/usr/sbin
-#	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/kpropd $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/krb5kdc $(1)/usr/sbin
-#	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/sim_server $(1)/usr/sbin
+endef
+
+define Package/krb5-server-extras/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/kadmind $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/kprop $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/kpropd $(1)/usr/sbin
+endef
+
+define Package/krb5-server/postinst
+mkdir -p $${IPKG_INSTROOT}/etc/krb5kdc
+touch $${IPKG_INSTROOT}/etc/krb5kdc/kadm5.acl
 endef
 
 $(eval $(call BuildPackage,krb5-libs))
 $(eval $(call BuildPackage,krb5-server))
+$(eval $(call BuildPackage,krb5-server-extras))
 $(eval $(call BuildPackage,krb5-client))

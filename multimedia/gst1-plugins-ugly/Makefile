@@ -8,31 +8,26 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gst1-plugins-ugly
-PKG_VERSION:=1.12.4
+PKG_VERSION:=1.24.8
 PKG_RELEASE:=1
+
+PKG_SOURCE:=gst-plugins-ugly-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=https://gstreamer.freedesktop.org/src/gst-plugins-ugly
+PKG_HASH:=3dfc12bf0b766682b7d6e1e29a404b55e2375ba172d11900179738ae89b7a2d5
+PKG_BUILD_DIR:=$(BUILD_DIR)/gst-plugins-ugly-$(PKG_VERSION)
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org> \
 		Ted Hess <thess@kitschensync.net>
-
-PKG_LICENSE:=LGPLv2
+PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=COPYING
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/gst-plugins-ugly-$(PKG_VERSION)
-PKG_SOURCE:=gst-plugins-ugly-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=http://gstreamer.freedesktop.org/src/gst-plugins-ugly/
-PKG_HASH:=1c165b8d888ed350acd8e6ac9f6fe06508e6fcc0a3afc6ccc9fbeb30df9be522
-
-PKG_CONFIG_DEPENDS:= \
-	CONFIG_PACKAGE_gst1-mod-asf \
-	CONFIG_PACKAGE_gst1-mod-lame \
-	CONFIG_PACKAGE_gst1-mod-mpg123 \
-	CONFIG_PACKAGE_gst1-mod-mpeg2dec \
-
-PKG_FIXUP:=autoreconf
-PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
+include $(INCLUDE_DIR)/meson.mk
+
+PKG_CONFIG_DEPENDS:= \
+	CONFIG_PACKAGE_gst1-mod-asf \
+	CONFIG_PACKAGE_gst1-mod-mpeg2dec \
 
 GST_UGLY_MODULES:=
 
@@ -40,7 +35,7 @@ define Package/gstreamer1-ugly/Default
   CATEGORY:=Multimedia
   SECTION:=multimedia
   TITLE:=GStreamer
-  URL:=http://gstreamer.freedesktop.org/
+  URL:=https://gstreamer.freedesktop.org/
   DEPENDS:= +libgstreamer1 $(ICONV_DEPENDS)
 endef
 
@@ -91,41 +86,31 @@ define Package/gstreamer1-plugins-ugly/config
 
 endef
 
-GST_COND_SELECT = $(patsubst %,$(if $(CONFIG_PACKAGE_gst1-mod-$(1)),--enable,--disable)-%,$(1))
+GST_COND_SELECT = -D$(1)=$(if $(CONFIG_PACKAGE_gst1-mod-$(1)),en,dis)abled
 
 GST_VERSION:=1.0
 
-CONFIGURE_ARGS += \
-	--disable-debug \
-	--disable-examples \
+MESON_ARGS += \
+	-Dasfdemux=$(if $(CONFIG_PACKAGE_gst1-mod-asf),en,dis)abled \
+	-Ddvdlpcmdec=disabled \
+	-Ddvdsub=disabled \
+	-Drealmedia=disabled \
 	\
-	--disable-a52dec \
-	--disable-amrnb \
-	--disable-amrwb \
-	$(call GST_COND_SELECT,asf) \
-	--disable-cdio \
-	--disable-dvdlpcmdec \
-	--disable-dvdread \
-	--disable-dvdsub \
-	--disable-iec958 \
-	$(call GST_COND_SELECT,lame) \
-	$(call GST_COND_SELECT,mpg123) \
+	-Da52dec=disabled \
+	-Dcdio=disabled \
+	-Ddvdread=disabled \
 	$(call GST_COND_SELECT,mpeg2dec) \
-	--disable-mpegaudioparse \
-	--disable-mpegstream \
-	--disable-realmedia \
-	--disable-sidplay \
-	--disable-synaesthesia \
-	--disable-twolame \
-	--disable-x264 \
+	-Dsidplay=disabled \
+	-Dx264=disabled \
 	\
-	--without-libiconv-prefix \
-	--without-libintl-prefix \
-
-EXTRA_LDFLAGS+= \
-	-Wl,-rpath-link=$(STAGING_DIR)/usr/lib \
-	$(if $(ICONV_FULL),-liconv) \
-
+	-Dgpl=enabled \
+	-Dnls=enabled \
+	-Dorc=disabled \
+	-Dtests=disabled \
+	-Dgobject-cast-checks=disabled \
+	-Dglib-asserts=disabled \
+	-Dglib-checks=disabled \
+	-Ddoc=disabled
 
 define Package/gst1-plugins-ugly/install
 	/bin/true
@@ -168,8 +153,6 @@ define GstBuildPlugin
 endef
 
 $(eval $(call GstBuildPlugin,asf,ASF demuxer,audio video riff rtp rtsp sdp tag,,))
-$(eval $(call GstBuildPlugin,lame,MP3 encoder (using LAME),audio,,+lame-lib))
-$(eval $(call GstBuildPlugin,mpg123,MP3 decoder (using mpg123),audio tag,,+libid3tag +mpg123))
 $(eval $(call GstBuildPlugin,mpeg2dec,MPEG decoder,video,,+libmpeg2))
 
 $(eval $(call BuildPackage,gstreamer1-plugins-ugly))

@@ -8,18 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=monit
-PKG_VERSION:=5.24.0
+PKG_VERSION:=5.34.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_HASH:=754d1f0e165e5a26d4639a6a83f44ccf839e381f2622e0946d5302fa1f2d2414
-PKG_SOURCE_URL:=https://mmonit.com/monit/dist
+PKG_SOURCE_URL:=https://bitbucket.org/tildeslash/monit/downloads/
+PKG_HASH:=37f514cd8973bbce104cb8517ff3fc504052a083703eee0d0e873db26b919820
 
+PKG_MAINTAINER:=Yaroslav Petrov <info@lank.me>
 PKG_LICENSE:=AGPL-3.0
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:tildeslash:monit
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -29,7 +31,6 @@ define Package/monit/Default
   DEPENDS:= +libpthread +zlib
   TITLE:=System services monitoring utility
   URL:=https://mmonit.com/monit/
-  MAINTAINER:=Etienne CHAMPETIER <champetier.etienne@gmail.com>
 endef
 
 define Package/monit/Default/description
@@ -60,7 +61,9 @@ $(call Package/monit/Default/description)
 endef
 
 CONFIGURE_ARGS += \
+	--with-piddir="/var/run" \
 	--without-pam \
+	ac_cv_ipv6=$(if $(CONFIG_IPV6),yes,no) \
 	libmonit_cv_setjmp_available=yes \
 	libmonit_cv_vsnprintf_c99_conformant=yes
 
@@ -74,6 +77,11 @@ ifeq ($(BUILD_VARIANT),nossl)
 	CONFIGURE_ARGS += \
 		--without-ssl
 endif
+
+define Build/Prepare
+	$(Build/Prepare/Default)
+	(cd $(PKG_BUILD_DIR) && ./bootstrap)
+endef
 
 define Package/monit/conffiles
 /etc/monitrc

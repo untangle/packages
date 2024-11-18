@@ -8,44 +8,57 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openldap
-PKG_VERSION:=2.4.46
-PKG_RELEASE:=1
+PKG_VERSION:=2.6.8
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tgz
-PKG_SOURCE_URL:=ftp://ftp.openldap.org/pub/OpenLDAP/openldap-release/ \
-	ftp://sunsite.cnlab-switch.ch/mirror/OpenLDAP/openldap-release/ \
-	ftp://ftp.nl.uu.net/pub/unix/db/openldap/openldap-release/ \
-	ftp://ftp.plig.org/pub/OpenLDAP/openldap-release/
-PKG_HASH:=9a90dcb86b99ae790ccab93b7585a31fbcbeec8c94bf0f7ab0ca0a87ea0c4b2d
+PKG_SOURCE_URL:=https://mirror.eu.oneandone.net/software/openldap/openldap-release/ \
+	https://www.openldap.org/software/download/OpenLDAP/openldap-release/
+PKG_HASH:=48969323e94e3be3b03c6a132942dcba7ef8d545f2ad35401709019f696c3c4e
 PKG_LICENSE:=OLDAP-2.8
 PKG_LICENSE_FILES:=LICENSE
+PKG_CPE_ID:=cpe:/a:openldap:openldap
 
 PKG_FIXUP:=autoreconf
 
+# Fixes the following:
+# libtool: Version mismatch error.  This is libtool 2.4.2, but the
+# libtool: definition of this LT_INIT comes from libtool 2.4.6.
+# libtool: You should recreate aclocal.m4 with macros from libtool 2.4.2
+# libtool: and run autoconf again.
+PKG_REMOVE_FILES:=build/ltversion.m4
+
+PKG_CONFIG_DEPENDS := \
+        CONFIG_OPENLDAP_DEBUG \
+        CONFIG_OPENLDAP_CRYPT \
+        CONFIG_OPENLDAP_MONITOR \
+        CONFIG_OPENLDAP_DB47 \
+        CONFIG_OPENLDAP_ICU
+
 include $(INCLUDE_DIR)/package.mk
 
-define Package/openldap/Default
-  TITLE:=LDAP implementation
-  URL:=http://www.openldap.org/
+define Package/libopenldap/Default
+  SECTION:=net
+  CATEGORY:=Network
+  SUBMENU:=OpenLDAP
+  TITLE:=LDAP directory suite
+  URL:=https://www.openldap.org/
   MAINTAINER:=W. Michael Petullo <mike@flyn.org>
 endef
 
-define Package/openldap/Default/description
-	OpenLDAP Software is an open source implementation of the
-	Lightweight Directory Access Protocol (LDAP).
-endef
-
 define Package/libopenldap
-  $(call Package/openldap/Default)
-  SECTION:=libs
-  CATEGORY:=Libraries
-  DEPENDS:=+libopenssl +libsasl2 +libpthread
+  $(call Package/libopenldap/Default)
+  MENU:=1
+  DEPENDS:=+libopenssl +libsasl2 +libpthread +libuuid +OPENLDAP_DB47:libdb47 +OPENLDAP_ICU:icu
   TITLE+= (libraries)
 endef
 
+define Package/openldap/config
+  source "$(SOURCE)/Config.in"
+endef
+
 define Package/libopenldap/description
-	$(call Package/openldap/Default/description)
-	This package contains the shared LDAP client libraries, needed by other programs.
+OpenLDAP Software is an open source implementation of the Lightweight Directory Access Protocol (LDAP). This package contains the shared LDAP client libraries, needed by other programs.
 endef
 
 define Package/libopenldap/conffiles
@@ -53,79 +66,94 @@ define Package/libopenldap/conffiles
 endef
 
 define Package/openldap-utils
-  $(call Package/openldap/Default)
-  SECTION:=utils
-  CATEGORY:=Utilities
+  $(call Package/libopenldap/Default)
   DEPENDS:=+libopenldap
   TITLE+= (utilities)
 endef
 
 define Package/openldap-utils/description
-	$(call Package/openldap/Default/description)
-	This package contains client programs required to access LDAP servers.
+This package contains client programs required to access LDAP servers.
 endef
 
 define Package/openldap-server
-  $(call Package/openldap/Default)
-  SECTION:=net
-  CATEGORY:=Network
+  $(call Package/libopenldap/Default)
   DEPENDS:=+libopenldap +libuuid
   TITLE+= (server)
 endef
 
 define Package/openldap-server/description
-	$(call Package/openldap/Default/description)
-	This package contains server programs required to provide LDAP services.
+This package contains server programs required to provide LDAP services.
 endef
 
 define Package/openldap-server/conffiles
 /etc/openldap/slapd.conf
+/etc/init.d/ldap
 endef
 
 TARGET_CFLAGS += $(FPIC) -lpthread \
 	-DURANDOM_DEVICE=\\\"/dev/urandom\\\"
 
 CONFIGURE_ARGS += \
-	--enable-shared \
-	--enable-static \
-	--disable-debug \
 	--enable-dynamic \
 	--enable-syslog \
-	--disable-local \
-	--disable-slurpd \
 	--with-cyrus-sasl \
-	--without-fetch \
 	--with-threads \
 	--with-tls \
-	--with-yielding_select="yes" \
-	--without-threads \
+	--with-yielding-select="yes" \
 	--enable-null \
-	--disable-bdb \
-	--disable-hdb \
-	--disable-monitor \
 	--disable-relay
 
-CONFIGURE_VARS += \
-	ol_cv_lib_icu="no"
+
+ifdef CONFIG_OPENLDAP_CRYPT
+	CONFIGURE_ARGS+= --enable-crypt
+else
+	CONFIGURE_ARGS+= --disable-crypt
+endif
+
+ifdef CONFIG_OPENLDAP_MONITOR
+	CONFIGURE_ARGS+= --enable-monitor
+else
+	CONFIGURE_ARGS+= --disable-monitor
+endif
+
+ifdef CONFIG_OPENLDAP_DEBUG
+	CONFIGURE_ARGS+= --enable-debug
+else
+	CONFIGURE_ARGS+= --disable-debug
+endif
+
+ifdef CONFIG_OPENLDAP_DB47
+	CONFIGURE_ARGS+= \
+		--enable-bdb \
+		--enable-hdb
+else
+	CONFIGURE_ARGS+= \
+		--disable-bdb \
+		--disable-hdb
+endif
+
+ifndef CONFIG_OPENLDAP_ICU
+	CONFIGURE_VARS += \
+		ol_cv_lib_icu="no"
+endif
 
 define Build/Compile
 	$(MAKE) -C $(PKG_BUILD_DIR) \
 		DESTDIR="$(PKG_INSTALL_DIR)" \
 		HOSTCC="$(HOSTCC)" \
 		depend all install
+	cd $(PKG_BUILD_DIR)/libraries/liblmdb && $(MAKE) $(CONFIGURE_VARS)
 endef
 
 define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/include
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/include/{lber,ldap}*.h $(1)/usr/include/
-	$(INSTALL_DIR) $(1)/usr/lib/
+	$(INSTALL_DIR) $(1)/usr/include $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/{lber,ldap}*.h $(1)/usr/include/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib{lber,ldap}*.{a,so*} $(1)/usr/lib/
 endef
 
 define Package/libopenldap/install
-	$(INSTALL_DIR) $(1)/etc/openldap
-	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/etc/openldap/ldap.conf $(1)/etc/openldap/
-	$(INSTALL_DIR) $(1)/usr/lib
+	$(INSTALL_DIR) $(1)/etc/openldap $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/etc/openldap/ldap.conf $(1)/etc/openldap/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lib{lber,ldap}*.so.* $(1)/usr/lib/
 endef
 
@@ -138,15 +166,15 @@ define Package/openldap-server/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/ldap.init $(1)/etc/init.d/ldap
 	$(INSTALL_DIR) $(1)/etc/openldap/schema
-	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/etc/openldap/schema/* $(1)/etc/openldap/schema/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/etc/openldap/schema/* $(1)/etc/openldap/schema/
 	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/etc/openldap/slapd.conf $(1)/etc/openldap/
 	$(INSTALL_DIR) $(1)/usr/sbin
-	# XXX: OpenLDAP installs slapd into libexecdir, not sbindir:
+	# NB: OpenLDAP installs slapd into libexecdir, not sbindir
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/lib/slapd $(1)/usr/sbin/
-	# XXX: switch default backend to ldif, since bdb is disabled
-	$(SED) 's|^\(database\)\([ \t]\+\)bdb|\1\2ldif|g' \
-	    -e 's|^\(index\)|#\1|g' \
-	    $(1)/etc/openldap/slapd.conf
+	$(eval SLAPTOOLS := slapadd slapcat slapdn slapindex slappasswd slaptest slapauth slapacl slapschema)
+	for i in $(SLAPTOOLS); do \
+		$(LN) ./slapd $(1)/usr/sbin/$$$$i; \
+	done
 endef
 
 $(eval $(call BuildPackage,libopenldap))

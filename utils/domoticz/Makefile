@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2016 - 2017  Stijn Tintel <stijn@linux-ipv6.be>
+# Copyright (C) 2016 - 2020  Stijn Tintel <stijn@linux-ipv6.be>
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,29 +8,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=domoticz
-PKG_VERSION_MAJOR:=3
-PKG_VERSION_PATCH:=9571
-PKG_COMMIT:=dfb39a9e739a0a07ab865577ed44e0b6aa9e7bdc
-PKG_VERSION:=$(PKG_VERSION_MAJOR).$(PKG_VERSION_PATCH)
+PKG_VERSION:=2023.2
 PKG_RELEASE:=1
 
-ifeq ($(PKG_COMMIT),)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/domoticz/domoticz/archive/$(PKG_VERSION)/$(PKG_SOURCE)
-else
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_COMMIT).tar.gz
-PKG_SOURCE_URL:=https://github.com/domoticz/domoticz/archive/$(PKG_COMMIT)/$(PKG_SOURCE)
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_COMMIT)
-endif
-PKG_HASH:=7e77a8ea87216f65c2f279535eb43d957e22ca14ccebfb1ef2054f9bc797a5c3
+PKG_SOURCE_URL:=https://codeload.github.com/domoticz/domoticz/tar.gz/$(PKG_VERSION)?
+PKG_HASH:=32bcf49df8c80c470352e63004a82d9601b90ccf406096099656250a4515ac28
 
+PKG_MAINTAINER:=David Woodhouse <dwmw2@infradead.org>
 PKG_LICENSE:=GPL-3.0
 PKG_LICENSE_FILES:=License.txt
+PKG_CPE_ID:=cpe:/a:domoticz:domoticz
 
-PKG_BUILD_PARALLEL:=1
-PKG_USE_MIPS16:=0
-
-CMAKE_INSTALL:=1
+PKG_BUILD_DEPENDS:=python3 minizip cereal
+PKG_BUILD_FLAGS:=no-mips16 lto
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -40,19 +31,24 @@ define Package/domoticz
   CATEGORY:=Utilities
   TITLE:=Open Source Home Automation System
   URL:=http://domoticz.com/
-  MAINTAINER:=Stijn Tintel <stijn@linux-ipv6.be>
   USERID:=domoticz=6144:domoticz=6144
   DEPENDS:= \
 	+boost \
 	+boost-date_time \
 	+boost-system \
 	+boost-thread \
+	+jsoncpp \
 	+libcurl \
-	+libmosquittopp \
+	+python3 \
+	+minizip \
+	+lua5.3 \
+	+libfmt \
+	+libmosquitto \
 	+libopenssl \
 	+libopenzwave \
 	+libsqlite3 \
 	+libstdcpp \
+	+telldus-core \
 	+zlib
 endef
 
@@ -61,30 +57,27 @@ define Package/domoticz/description
 endef
 
 CMAKE_OPTIONS += \
+	-DBUILD_SHARED_LIBS=yes \
+	-DBoost_NO_BOOST_CMAKE=yes \
+	-DGIT_SUBMODULE=no \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DUSE_BUILTIN_MQTT=no \
 	-DUSE_BUILTIN_SQLITE=no \
+	-DUSE_BUILTIN_JSONCPP=no \
+	-DUSE_BUILTIN_MINIZIP=no \
+	-DUSE_BUILTIN_LIBFMT=no \
+	-DUSE_LUA_STATIC=no \
 	-DUSE_STATIC_BOOST=no \
 	-DUSE_STATIC_LIBSTDCXX=no \
 	-DUSE_STATIC_OPENZWAVE=no \
 	-DUSE_OPENSSL_STATIC=no \
-	-DUSE_PYTHON=no \
+	-DUSE_PYTHON=yes \
 	-DWITH_LIBUSB=no
 
-TARGET_CFLAGS+=-flto
-TARGET_CXXFLAGS+=-DWITH_GPIO -flto
+TARGET_CXXFLAGS += -DWITH_GPIO
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
-	# Fix APPVERSION/APPDATE since we don't build from a git tree
-	sed -i 's/#define APPVERSION.*/#define APPVERSION $(PKG_VERSION_PATCH)/' \
-		 $(PKG_BUILD_DIR)/appversion.default
-	COMMITDATE=`tar tvfz $(DL_DIR)/$(PKG_SOURCE) --full-time | sed 's/.* \(20..-..-.. ..:..:..\) domoticz-.*/\1/;q'`; \
-	COMMITTS=`date --date="$$$${COMMITDATE}" +%s`; \
-	sed -i "s/#define APPDATE.*/#define APPDATE $$$${COMMITTS}/" $(PKG_BUILD_DIR)/appversion.default
-ifneq ($(PKG_COMMIT),)
-	sed -i "s/#define APPHASH.*/#define APPHASH \"$(shell echo $(PKG_COMMIT) | cut -c1-8)\"/" $(PKG_BUILD_DIR)/appversion.default
-endif
 	# Remove unwanted scripts
 	cd $(PKG_BUILD_DIR)/scripts && rm -rf \
 		buienradar_rain_example.pl \
@@ -106,7 +99,7 @@ endif
 endef
 
 define Package/domoticz/install
-	$(INSTALL_DIR) $(1)/etc/config $(1)/etc/hotplug.d/tty $(1)/etc/init.d $(1)/etc/domoticz
+	$(INSTALL_DIR) $(1)/etc/config $(1)/etc/hotplug.d/tty $(1)/etc/init.d $(1)/etc/domoticz/plugins
 	$(INSTALL_BIN) ./files/domoticz.hotplug $(1)/etc/hotplug.d/tty/domoticz
 	$(INSTALL_BIN) ./files/domoticz.init $(1)/etc/init.d/domoticz
 	$(INSTALL_CONF) ./files/domoticz.config $(1)/etc/config/domoticz
@@ -121,7 +114,9 @@ define Package/domoticz/install
 	# compress static web content
 	find $(1)/usr/share/domoticz/www -name "*.css" -exec gzip -9 {} \;
 	find $(1)/usr/share/domoticz/www -name "*.js" -exec gzip -9 {} \;
-	find $(1)/usr/share/domoticz/www -name "*.html" -exec sh -c 'grep -q "<\!--#embed" {} || gzip -9 {}' \;
+	gzip -9 $(1)/usr/share/domoticz/www/*.html
+	gzip -9 $(1)/usr/share/domoticz/www/secpanel/*.html
+	find $(1)/usr/share/domoticz/www/views -name "*.html" -exec sh -c 'grep -q "<\!--#embed" {} || gzip -9 {}' \;
 endef
 
 define Package/domoticz/conffiles

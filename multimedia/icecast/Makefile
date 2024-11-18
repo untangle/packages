@@ -6,31 +6,33 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=icecast
-PKG_VERSION:=2.4.3
-PKG_RELEASE:=3
+PKG_VERSION:=2.4.4
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://downloads.xiph.org/releases/icecast/
-PKG_HASH:=c85ca48c765d61007573ee1406a797ae6cb31fb5961a42e7f1c87adb45ddc592
+PKG_HASH:=49b5979f9f614140b6a38046154203ee28218d8fc549888596a683ad604e4d44
 
 PKG_MAINTAINER:=André Gaul <andre@gaul.io>, \
 		Ted Hess <thess@kitschensync.net>
 
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:icecast:icecast
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:= 1
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
 define Package/icecast
   SECTION:=multimedia
   CATEGORY:=Multimedia
-  DEPENDS:=+libcurl +libxml2 +libxslt +libogg +libvorbisidec
+  DEPENDS:=+libcurl +libxml2 +libxslt +libogg +libvorbisidec $(ICONV_DEPENDS)
   TITLE:=A streaming media server for Ogg/Vorbis and MP3 audio streams
   USERID:=icecast=87:icecast=87
-  URL:=http://www.icecast.org/
+  URL:=https://icecast.org/
 endef
 
 define Package/icecast/description
@@ -53,6 +55,7 @@ CONFIGURE_ARGS+= \
 	--with-vorbis="$(STAGING_DIR)/usr" \
 	--with-xslt-config="$(STAGING_DIR)/usr/bin/xslt-config"
 
+TARGET_CFLAGS+= -I$(STAGING_DIR)/usr/include/libxml2
 
 # Manually edit configure in case both vorbis and tremor host packages are installed
 define Build/Configure

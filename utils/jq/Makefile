@@ -8,30 +8,32 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=jq
-PKG_VERSION:=1.5
-PKG_RELEASE:=2
-PKG_LICENSE:=BSD
+PKG_VERSION:=1.7.1
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/stedolan/jq/releases/download/jq-$(PKG_VERSION)/
-PKG_HASH:=c4d2bfec6436341113419debf479d833692cc5cdab7eb0326b5a4d4fbe9f493c
+PKG_SOURCE_URL:=https://github.com/jqlang/jq/releases/download/$(PKG_NAME)-$(PKG_VERSION)
+PKG_HASH:=478c9ca129fd2e3443fe27314b455e211e0d8c60bc8ff7df703873deeee580c2
+
+PKG_MAINTAINER:=Marko Ratkaj <markoratkaj@gmail.com>
+PKG_LICENSE:=MIT
+PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:jqlang:jq
 
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
-ifdef CONFIG_USE_MIPS16
-  TARGET_CFLAGS += -fno-ipa-sra
-endif
-
-TARGET_CFLAGS += -std=c99
+CONFIGURE_ARGS+= \
+	--disable-docs \
+	--disable-valgrind \
+	--without-oniguruma
 
 define Package/jq
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Lightweight and flexible command-line JSON processor.
-  URL:=https://stedolan.github.io/jq/
-  MAINTAINER:=Marko Ratkaj <marko.ratkaj@sartura.hr>
+  URL:=https://jqlang.github.io/jq/
 endef
 
 define Package/jq/description

@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ser2net
-PKG_VERSION:=3.5
-PKG_RELEASE:=3
+PKG_VERSION:=4.6.2
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/ser2net
-PKG_HASH:=ba9e1d60a89fd7ed075553b4a2074352902203f7fbd9b65b15048c05f0e3f3be
+PKG_HASH:=63bafcd65bb9270a93b7d5cdde58ccf4d279603ff6d044ac4b484a257cda82ce
 
-PKG_LICENSE:=GPL-2.0+
+PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 PKG_MAINTAINER:=Michael Heimpold <mhei@heimpold.de>
 
@@ -24,12 +24,17 @@ PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
+CONFIGURE_ARGS += \
+	--with-pam=no \
+	--with-pthreads \
+	--with-sysfs-led-support
+
 define Package/ser2net
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Serial to Network Proxy
-  URL:=http://sourceforge.net/projects/ser2net/
-  DEPENDS:=+USE_UCLIBC:libpthread +USE_UCLIBC:librt
+  URL:=https://sourceforge.net/projects/ser2net/
+  DEPENDS:=+libgensio +libyaml +libpthread
 endef
 
 define Package/ser2net/description
@@ -38,7 +43,8 @@ define Package/ser2net/description
 endef
 
 define Package/ser2net/conffiles
-/etc/ser2net.conf
+/etc/config/ser2net
+/etc/ser2net.yaml
 endef
 
 define Package/ser2net/install
@@ -46,7 +52,7 @@ define Package/ser2net/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/ser2net $(1)/usr/sbin/
 
 	$(INSTALL_DIR) $(1)/etc
-	$(INSTALL_CONF) ./files/ser2net.conf $(1)/etc/
+	$(INSTALL_CONF) ./files/ser2net.yaml $(1)/etc/
 
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/ser2net.config $(1)/etc/config/ser2net

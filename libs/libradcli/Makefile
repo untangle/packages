@@ -8,15 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libradcli
-PKG_VERSION:=1.2.5
+PKG_VERSION:=1.3.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=radcli-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/radcli/radcli/releases/download/$(PKG_VERSION)/
-PKG_HASH:=be7551bcf0c210b8efffe4d2952d61feb8591edc922660910488bfaab040e82c
+PKG_SOURCE_URL:=https://github.com/radcli/radcli/releases/download/$(PKG_VERSION)
+PKG_HASH:=20ddc8429d5912dfa2e71fafc93881844ce98e898c041b1dd7f757b9ddc8fcfd
 PKG_BUILD_DIR:=$(BUILD_DIR)/radcli-$(PKG_VERSION)
 
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -24,7 +25,7 @@ define Package/libradcli
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=A library for radius clients
-  URL:=http://radcli.github.io/radcli/
+  URL:=https://radcli.github.io/radcli
   MAINTAINER:=Nikos Mavrogiannopoulos <nmav@gnutls.org>
   DEPENDS:= +RADCLI_TLS:libgnutls +libnettle
 endef

@@ -1,6 +1,4 @@
 #
-# Copyright (C) 2010-2012 OpenWrt.org
-#
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
@@ -8,75 +6,79 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=vips
-PKG_VERSION:=8.6.1
-PKG_RELEASE:=2
+PKG_VERSION:=8.15.2
+PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/jcupitt/libvips/releases/download/v8.6.1/
-PKG_HASH:=f9ba6235ebc3e4d20af5f1604436bcd9686a3fecbe40838325d542f0c21a9270
-PKG_FIXUP:=autoreconf
-PKG_CHECK_FORMAT_SECURITY:=0
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=https://github.com/libvips/libvips/releases/download/v$(PKG_VERSION)
+PKG_HASH:=a2ab15946776ca7721d11cae3215f20f1f097b370ff580cd44fc0f19387aee84
+
+PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
+PKG_LICENSE:=LGPL-2.1-or-later
+PKG_LICENSE_FILES:=COPYING
+PKG_CPE_ID:=cpe:/a:libvips:libvips
+
+PKG_BUILD_DEPENDS:=glib2/host
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
-
-PKG_INSTALL=1
+include $(INCLUDE_DIR)/meson.mk
 
 define Package/vips
   $(call Package/vips/Default)
   SECTION:=multimedia
   CATEGORY:=Multimedia
   TITLE:=An image manipulation library
-  URL:=http://www.vips.ecs.soton.ac.uk/
-  MAINTAINER:=W. Michael Petullo <mike@flyn.org>
-  DEPENDS:=+glib2 +libexif +libexpat +libjpeg +libpng +giflib +libstdcpp +libxml2 $(INTL_DEPENDS)
+  URL:=https://libvips.github.io/libvips/
+  DEPENDS:=+glib2 +libexif +libexpat +libjpeg +libpng +giflib +libxml2
 endef
 
-TARGET_LDFLAGS+= \
-	-Wl,-rpath-link=$(STAGING_DIR)/usr/lib
+MESON_ARGS += \
+	-Dgtk_doc=false \
+	-Dintrospection=disabled \
+	-Danalyze=false \
+	-Dcfitsio=disabled \
+	-Dfftw=disabled \
+	-Darchive=disabled \
+	-Dimagequant=disabled \
+	-Dlcms=disabled \
+	-Dwebp=disabled \
+	-Dmagick=disabled \
+	-Dmagick-package=disabled \
+	-Dmatio=disabled \
+	-Dnifti=disabled \
+	-Dopenexr=disabled \
+	-Dopenslide=disabled \
+	-Dorc=disabled \
+	-Dpangocairo=disabled \
+	-Dpdfium=disabled \
+	-Dpoppler=disabled \
+	-Dppm=false \
+	-Dradiance=false \
+	-Drsvg=disabled \
+	-Dtiff=disabled \
+	-Dzlib=disabled \
+	-Dcgif=enabled \
+	-Djpeg=enabled \
+	-Dexif=enabled \
+	-Dpng=enabled \
 
-CONFIGURE_ARGS += \
-	--disable-cxx \
-	--disable-threads \
-	--without-cfitsio \
-	--without-fftw \
-	--without-lcms \
-	--without-magick \
-	--without-matio \
-	--without-OpenEXR \
-	--without-orc \
-	--without-pangoft2 \
-	--without-python \
-	--without-tiff \
-	--without-v4l \
-	--without-x \
-	--without-zip \
-	--with-jpeg \
-	--with-libexif \
-	--with-png \
+TARGET_CXXFLAGS += -fno-rtti
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/vips
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/include/* \
-		$(1)/usr/include/
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/vips/* $(1)/usr/include/vips
 
 	$(INSTALL_DIR) $(1)/usr/lib/
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/*.so* \
-		$(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libvips.so* $(1)/usr/lib/
 
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig/
-	$(INSTALL_DATA) \
-		$(PKG_INSTALL_DIR)/usr/lib/pkgconfig/* \
-		$(1)/usr/lib/pkgconfig/
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/vips.pc $(1)/usr/lib/pkgconfig/vips.pc
 endef
 
 define Package/vips/install
 	$(INSTALL_DIR) $(1)/usr/lib/
-	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/*.so* \
-		$(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libvips.so.* $(1)/usr/lib/
 endef
 
 $(eval $(call BuildPackage,vips))
